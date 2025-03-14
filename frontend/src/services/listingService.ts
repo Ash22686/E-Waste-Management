@@ -1,4 +1,3 @@
-// filepath: GDG/frontend/src/services/listingService.ts
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api/listings';
@@ -48,5 +47,10 @@ export const getSellerListings = async (token: string) => {
       Authorization: `Bearer ${token}`,
     },
   });
+  return response.data;
+};
+
+export const getScrapListings = async () => {
+  const response = await axios.get(`${API_URL}/scrap`);
   return response.data;
 };

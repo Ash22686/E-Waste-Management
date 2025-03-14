@@ -1,42 +1,36 @@
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { MarketplaceHeader } from "@/components/marketplace/MarketplaceHeader";
 import { MarketplaceFilters } from "@/components/marketplace/MarketplaceFilters";
 import { MarketplaceListings } from "@/components/marketplace/MarketplaceListings";
 import { MarketplaceMobileFilters } from "@/components/marketplace/MarketplaceMobileFilters";
-import { sampleListings } from "@/data/marketplace";
+import { getAllListings } from "@/services/listingService";
 
 export default function Marketplace() {
+  const [listings, setListings] = useState([]);
+  const [filteredListings, setFilteredListings] = useState([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
-  const [selectedGrades, setSelectedGrades] = useState<Record<string, boolean>>({
-    "A": true,
-    "B": true,
-    "C": true
-  });
+  const [selectedGrades, setSelectedGrades] = useState<Record<string, boolean>>({});
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({});
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  useEffect(() => {
+    const fetchListings = async () => {
+      const data = await getAllListings();
+      setListings(data.data.listings);
+      setFilteredListings(data.data.listings);
+    };
+
+    fetchListings();
+  }, []);
+
   const toggleGrade = (grade: string) => {
-    setSelectedGrades(prev => ({
-      ...prev,
-      [grade]: !prev[grade]
-    }));
+    setSelectedGrades(prev => ({ ...prev, [grade]: !prev[grade] }));
   };
 
   const toggleCategory = (category: string) => {
-    setSelectedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
+    setSelectedCategories(prev => ({ ...prev, [category]: !prev[category] }));
   };
-
-  // This would be replaced with actual filtering logic in a real app
-  const filteredListings = sampleListings.filter(listing => 
-    listing.price >= priceRange[0] && 
-    listing.price <= priceRange[1] &&
-    selectedGrades[listing.grade]
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -25,12 +25,12 @@ export const register = async (userData: IRegisterRequest): Promise<{ user: IUse
     coordinates,
   }) as UserDocument;
 
-  const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, {
+  const token = jwt.sign({ id: (user._id as unknown as string).toString() }, JWT_SECRET, {
     expiresIn: parseInt(process.env.JWT_EXPIRES_IN as string, 10),
   });
 
   const userResponse: IUserResponse = {
-    _id: user._id.toString(),
+    _id: (user._id as unknown as string).toString(),
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
@@ -55,12 +55,12 @@ export const login = async (credentials: ILoginRequest): Promise<{ user: IUserRe
     throw new Error('Invalid email or password');
   }
 
-  const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, {
+  const token = jwt.sign({ id: (user._id as unknown as string).toString() }, JWT_SECRET, {
     expiresIn: parseInt(process.env.JWT_EXPIRES_IN as string, 10),
   });
 
   const userResponse: IUserResponse = {
-    _id: user._id.toString(),
+    _id: (user._id as unknown as string).toString(),
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
@@ -73,13 +73,13 @@ export const login = async (credentials: ILoginRequest): Promise<{ user: IUserRe
 };
 
 export const getCurrentUser = async (userId: string): Promise<IUserResponse> => {
-  const user = await User.findById(userId).select('-password') as UserDocument;
+  const user = await User.findById(userId).select('-password') as UserDocument | null;
   if (!user) {
     throw new Error('User not found');
   }
 
   const userResponse: IUserResponse = {
-    _id: user._id.toString(),
+    _id: (user._id as unknown as string).toString(),
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,

@@ -11,11 +11,11 @@ interface ListingCardProps {
   description: string;
   image: string;
   price: number;
-  grade: "A" | "B" | "C";
+  grade: string;
   location: string;
-  delay?: number;
+  delay: number;
+  timeLeft: string;
   className?: string;
-  timeLeft?: string;
 }
 
 export function ListingCard({ 
@@ -30,57 +30,31 @@ export function ListingCard({
   timeLeft,
   className 
 }: ListingCardProps) {
-  
-  // Determine background color based on grade
-  const gradeBg = {
-    A: "bg-green-100 text-green-800",
-    B: "bg-yellow-100 text-yellow-800",
-    C: "bg-orange-100 text-orange-800"
-  }[grade];
-  
   return (
-    <Card 
-      className={cn(
-        "overflow-hidden transition-all duration-300 hover:shadow-lg bg-white border-gray-100 hover:border-gray-200",
-        fadeUp(delay),
-        className
-      )}
-    >
-      <div className="relative h-48 overflow-hidden">
-        <img 
-          src={image} 
-          alt={title} 
-          className="object-cover w-full h-full transition-transform duration-700 hover:scale-105"
-        />
-        <Badge className={cn("absolute top-3 right-3", gradeBg)}>
-          Grade {grade}
-        </Badge>
-        {timeLeft && (
-          <div className="absolute bottom-3 left-3 flex items-center space-x-1 backdrop-blur-md bg-black/40 text-white text-xs px-2 py-1 rounded-full">
-            <Clock className="w-3 h-3" />
-            <span>{timeLeft}</span>
-          </div>
-        )}
-      </div>
-      
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg line-clamp-1">{title}</CardTitle>
-        <CardDescription className="flex items-center text-xs text-gray-500">
-          <MapPin className="w-3 h-3 mr-1" /> {location}
-        </CardDescription>
+    <Card className={cn("shadow-md", className, fadeUp(delay))}>
+      <CardHeader className="p-0">
+        <img src={image} alt={title} className="w-full h-48 object-cover rounded-t-md" />
       </CardHeader>
-      
-      <CardContent>
-        <p className="text-sm text-gray-600 line-clamp-2 h-10">{description}</p>
-        <p className="mt-3 text-lg font-semibold">${price.toFixed(2)}</p>
+      <CardContent className="p-4">
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        <CardDescription className="text-sm text-gray-600 mb-2">{description}</CardDescription>
+        <div className="flex items-center justify-between mb-4">
+          <Badge variant="outline" className="text-xs">{grade}</Badge>
+          <span className="text-lg font-bold">${price}</span>
+        </div>
+        <div className="flex items-center text-sm text-gray-500">
+          <MapPin className="w-4 h-4 mr-1" />
+          {location}
+        </div>
+        <div className="flex items-center text-sm text-gray-500 mt-1">
+          <Clock className="w-4 h-4 mr-1" />
+          {timeLeft}
+        </div>
       </CardContent>
-      
-      <CardFooter className="flex justify-between pt-0">
-        <Button variant="outline" size="sm" className="text-xs">
-          <Eye className="w-3 h-3 mr-1" /> Details
-        </Button>
-        <Button size="sm" className="text-xs bg-eco-500 hover:bg-eco-600">
-          <ShoppingBag className="w-3 h-3 mr-1" /> Request
+      <CardFooter className="p-4 pt-0">
+        <Button variant="outline" className="w-full">
+          <ShoppingBag className="w-4 h-4 mr-2" />
+          View Details
         </Button>
       </CardFooter>
     </Card>
