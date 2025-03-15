@@ -5,12 +5,14 @@ import { Dispatch, SetStateAction } from "react";
 
 // Categories for filtering
 const categories = [
-  { id: "laptops", name: "Laptops & Computers" },
-  { id: "smartphones", name: "Smartphones & Tablets" },
-  { id: "audio", name: "Audio Equipment" },
-  { id: "gaming", name: "Gaming Consoles" },
-  { id: "monitors", name: "Monitors & Displays" },
-  { id: "components", name: "Components & Parts" }
+  { id: "Electronics", name: "Electronics" },
+  { id: "Mobile Phones", name: "Mobile Phones" },
+  { id: "Audio", name: "Audio Equipment" },
+  { id: "Gaming Consoles", name: "Gaming Consoles" },
+  { id: "Monitors", name: "Monitors" },
+  { id: "PC Parts", name: "PC Parts" },
+  { id: "Laptops", name: "Laptops" },
+  { id: "Tablets", name: "Tablets" }
 ];
 
 interface MarketplaceFiltersProps {
@@ -99,7 +101,11 @@ export function MarketplaceFilters({
       </div>
       
       <div className="pt-4 border-t">
-        <Button variant="outline" className="w-full">Reset Filters</Button>
+        <Button variant="outline" className="w-full" onClick={() => {
+          setPriceRange([0, 1000]);
+          setSelectedGrades({});
+          setSelectedCategories({});
+        }}>Reset Filters</Button>
       </div>
     </div>
   );

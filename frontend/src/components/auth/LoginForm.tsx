@@ -9,6 +9,7 @@ import { login } from "@/services/authService";
 
 export function LoginForm() {
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,8 +22,8 @@ export function LoginForm() {
       const data = await login(formData);
       localStorage.setItem('token', data.token);
       navigate('/marketplace');
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.message || 'Login failed');
     }
   };
 
@@ -45,6 +46,8 @@ export function LoginForm() {
               </div>
               <Input id="password" name="password" type="password" placeholder="••••••••" value={formData.password} onChange={handleChange} />
             </div>
+            
+            {errorMessage && <p className="text-red-500 text-xs">{errorMessage}</p>}
             
             <GradientButton type="submit" className="w-full mt-6">
               Sign in

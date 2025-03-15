@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { fadeUp } from "@/utils/animations";
 import { cn } from "@/lib/utils";
-import { Clock, Eye, MapPin, ShoppingBag } from "lucide-react";
+import { Clock, MapPin, ShoppingBag } from "lucide-react";
 
 interface ListingCardProps {
   id: string;
@@ -13,8 +13,14 @@ interface ListingCardProps {
   price: number;
   grade: string;
   location: string;
-  delay: number;
+  category: string;
+  seller?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   timeLeft: string;
+  delay: number;
   className?: string;
 }
 
@@ -26,8 +32,10 @@ export function ListingCard({
   price, 
   grade, 
   location, 
-  delay,
+  category,
+  seller,
   timeLeft,
+  delay,
   className 
 }: ListingCardProps) {
   return (
@@ -50,6 +58,11 @@ export function ListingCard({
           <Clock className="w-4 h-4 mr-1" />
           {timeLeft}
         </div>
+        {seller && (
+          <div className="flex items-center text-sm text-gray-500 mt-1">
+            <span>Seller: {seller.firstName} {seller.lastName}</span>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button variant="outline" className="w-full">

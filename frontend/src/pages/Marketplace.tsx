@@ -16,13 +16,22 @@ export default function Marketplace() {
 
   useEffect(() => {
     const fetchListings = async () => {
-      const data = await getAllListings();
-      setListings(data.data.listings);
-      setFilteredListings(data.data.listings);
+      try {
+        const response = await getAllListings();
+        const data = response.data;
+        setListings(data.listings);
+        setFilteredListings(data.listings);
+      } catch (error) {
+        console.error("Failed to fetch listings:", error);
+      }
     };
 
     fetchListings();
   }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [priceRange, selectedGrades, selectedCategories]);
 
   const toggleGrade = (grade: string) => {
     setSelectedGrades(prev => ({ ...prev, [grade]: !prev[grade] }));
@@ -30,6 +39,27 @@ export default function Marketplace() {
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+  };
+
+  const applyFilters = () => {
+    let filtered = listings;
+
+    // Filter by price range
+    filtered = filtered.filter(listing => listing.price >= priceRange[0] && listing.price <= priceRange[1]);
+
+    // Filter by selected grades
+    const selectedGradeKeys = Object.keys(selectedGrades).filter(key => selectedGrades[key]);
+    if (selectedGradeKeys.length > 0) {
+      filtered = filtered.filter(listing => selectedGradeKeys.includes(listing.grade));
+    }
+
+    // Filter by selected categories
+    const selectedCategoryKeys = Object.keys(selectedCategories).filter(key => selectedCategories[key]);
+    if (selectedCategoryKeys.length > 0) {
+      filtered = filtered.filter(listing => selectedCategoryKeys.includes(listing.category));
+    }
+
+    setFilteredListings(filtered);
   };
 
   return (

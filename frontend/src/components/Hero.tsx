@@ -38,7 +38,7 @@ export function Hero() {
               <GradientButton 
                 variant="outline" 
                 size="lg" 
-                className="min-w-[180px] border-gray-300 bg-white text-gray-800 hover:bg-gray-50"
+                className="min-w-[180px] border-gray-300 bg-white text-white hover:bg-gray-50"
               >
                 Browse Marketplace
               </GradientButton>

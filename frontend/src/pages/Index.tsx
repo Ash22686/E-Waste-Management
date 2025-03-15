@@ -379,12 +379,12 @@ export default function Index() {
           </p>
           <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 ${fadeUp(200)}`}>
             <Link to="/auth/register">
-              <Button size="lg" className="min-w-[180px] bg-white text-eco-700 hover:bg-gray-100 hover:text-eco-800">
+              <Button size="lg" variant="outline" className="min-w-[180px] text-black border-white hover:bg-white/10">
                 Create Account
               </Button>
             </Link>
             <Link to="/marketplace">
-              <Button size="lg" variant="outline" className="min-w-[180px] text-white border-white hover:bg-white/10">
+              <Button size="lg" variant="outline" className="min-w-[180px] text-black border-white hover:bg-white/10">
                 Browse Marketplace
               </Button>
             </Link>

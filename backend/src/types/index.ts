@@ -3,18 +3,19 @@ import { ObjectId } from 'mongoose';
 
 // User interfaces
 export interface IUser {
-  _id: ObjectId;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
   password: string;
-  userType: 'seller' | 'buyer';
+  userType: string;
   address: string;
   coordinates: {
     lat: number;
     lng: number;
   };
 }
+
 
 export interface IUserResponse {
   _id: string;
@@ -54,9 +55,9 @@ export interface IAuthResponse {
 }
 
 // Extend the Express Request interface to include user
+
 export interface AuthRequest extends Request {
   user?: IUser;
-}
 
 // Listing interfaces
 export interface IListing {

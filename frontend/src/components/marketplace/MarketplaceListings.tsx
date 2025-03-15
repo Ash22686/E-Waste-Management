@@ -8,15 +8,22 @@ interface Listing {
   description: string;
   image: string;
   price: number;
-  grade: "A" | "B" | "C";
+  grade: string;
   location: string;
+  category: string;
+  seller?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  timeLeft: string;
 }
 
 interface MarketplaceListingsProps {
   listings: Listing[];
 }
 
-export function MarketplaceListings({ listings }: MarketplaceListingsProps) {
+export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps) {
   return (
     <div className="lg:w-3/4">
       <div className="flex justify-between items-center mb-6">

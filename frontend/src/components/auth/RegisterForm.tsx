@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { GradientButton } from "@/components/GradientButton";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Laptop, ShoppingBag } from "lucide-react";
+import { Laptop, ShoppingBag, MapPin } from "lucide-react";
 import { fadeUp } from "@/utils/animations";
 import { register } from "@/services/authService";
+import { Button } from "@/components/ui/button"; // Import the Button component
 
 export function RegisterForm() {
   const [userType, setUserType] = useState<"seller" | "buyer">("seller");
@@ -19,6 +20,8 @@ export function RegisterForm() {
     address: '',
     coordinates: { lat: 0, lng: 0 },
   });
+  const [errors, setErrors] = useState({});
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,26 +30,52 @@ export function RegisterForm() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
     try {
       const data = await register({ ...formData, userType });
       localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
       navigate('/marketplace');
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.message || 'Registration failed');
     }
+  };
+
+  const validateForm = () => {
+    const newErrors: any = {};
+    if (!formData.firstName) newErrors.firstName = 'First name is required';
+    if (!formData.lastName) newErrors.lastName = 'Last name is required';
+    if (!formData.email) newErrors.email = 'Email is required';
+    if (!formData.password) newErrors.password = 'Password is required';
+    if (!formData.address) newErrors.address = 'Address is required';
+    return newErrors;
   };
 
   const handleGetCoordinates = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setFormData({
-          ...formData,
-          coordinates: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          },
-        });
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log("Coordinates obtained:", position.coords.latitude, position.coords.longitude);
+          setFormData((prevFormData) => ({
+            ...prevFormData,
+            coordinates: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            },
+          }));
+          setErrorMessage('');
+        },
+        (error) => {
+          console.error("Error getting coordinates:", error);
+          setErrorMessage("Failed to get coordinates. Please try again.");
+        }
+      );
+    } else {
+      setErrorMessage("Geolocation is not supported by this browser.");
     }
   };
 
@@ -86,34 +115,48 @@ export function RegisterForm() {
             <div className="space-y-2">
               <Label htmlFor="firstName">First name</Label>
               <Input id="firstName" name="firstName" placeholder="John" value={formData.firstName} onChange={handleChange} />
+              {errors.firstName && <p className="text-red-500 text-xs">{errors.firstName}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="lastName">Last name</Label>
               <Input id="lastName" name="lastName" placeholder="Doe" value={formData.lastName} onChange={handleChange} />
+              {errors.lastName && <p className="text-red-500 text-xs">{errors.lastName}</p>}
             </div>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" placeholder="john.doe@example.com" value={formData.email} onChange={handleChange} />
+            {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input id="password" name="password" type="password" placeholder="••••••••" value={formData.password} onChange={handleChange} />
+            {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="address">Address</Label>
             <Input id="address" name="address" placeholder="123 Main St" value={formData.address} onChange={handleChange} />
+            {errors.address && <p className="text-red-500 text-xs">{errors.address}</p>}
           </div>
 
           <div className="space-y-2">
             <Label>Coordinates</Label>
-            <Button type="button" onClick={handleGetCoordinates}>Get Coordinates</Button>
-            <p>Latitude: {formData.coordinates.lat}</p>
-            <p>Longitude: {formData.coordinates.lng}</p>
+            <div className="flex items-center space-x-2">
+              <Button type="button" onClick={handleGetCoordinates} className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4" />
+                <span>Get Coordinates</span>
+              </Button>
+              <div className="text-sm text-gray-600">
+                <p>Lat: {formData.coordinates.lat}</p>
+                <p>Lng: {formData.coordinates.lng}</p>
+              </div>
+            </div>
           </div>
+          
+          {errorMessage && <p className="text-red-500 text-xs">{errorMessage}</p>}
           
           <GradientButton type="submit" className="w-full mt-6">
             Create account
