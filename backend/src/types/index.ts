@@ -58,7 +58,7 @@ export interface IAuthResponse {
 
 export interface AuthRequest extends Request {
   user?: IUser;
-
+}
 // Listing interfaces
 export interface IListing {
   _id: ObjectId;

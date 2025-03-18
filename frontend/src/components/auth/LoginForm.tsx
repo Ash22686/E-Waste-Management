@@ -50,7 +50,7 @@ export function LoginForm() {
             {errorMessage && <p className="text-red-500 text-xs">{errorMessage}</p>}
             
             <GradientButton type="submit" className="w-full mt-6">
-              Sign in
+              Log in
             </GradientButton>
           </div>
         </form>
