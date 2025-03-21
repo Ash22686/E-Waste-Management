@@ -8,8 +8,8 @@ import { FeatureCard } from "@/components/FeatureCard";
 import { fadeUp } from "@/utils/animations";
 import { Recycle, MapPin, Factory, Award, Leaf, BarChart3 } from "lucide-react";
 import { getAllRecyclingCenters } from '@/services/recyclingService';
-import { Navbar } from "@/components/Navbar"; // Import Navbar
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
+import { Navbar } from "@/components/Navbar"; 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Recycling() {
   const [recyclingCenters, setRecyclingCenters] = useState([]);
@@ -22,7 +22,6 @@ export default function Recycling() {
       setRecyclingCenters(data.data.recyclingCenters);
       setFilteredCenters(data.data.recyclingCenters);
     };
-
     fetchRecyclingCenters();
   }, []);
 
@@ -30,14 +29,14 @@ export default function Recycling() {
     if (city === 'All') {
       setFilteredCenters(recyclingCenters);
     } else {
-      setFilteredCenters(recyclingCenters.filter(center => center.address.includes(city)));
+      setFilteredCenters(recyclingCenters.filter(center => center.address.toLowerCase().includes(city.toLowerCase())));
     }
   }, [city, recyclingCenters]);
 
   return (
     <div className="min-h-screen">
-      <Navbar /> {/* Add Navbar */}
-      <div className="pt-16"> {/* Add padding to the top */}
+      <Navbar />
+      <div className="pt-16">
         <Container className="py-12">
           <div className="flex flex-col items-center justify-center mb-12">
             <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-4">
@@ -58,24 +57,22 @@ export default function Recycling() {
               </TabsList>
               
               <TabsContent value="centers" className={fadeUp()}>
-              <div className="mb-4">
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                  Select City
-                </label>
-                <Select value={city} onValueChange={setCity}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a city" />
-                  </SelectTrigger>
-                  <SelectContent className="w-full"> 
-                    <SelectItem value="All">All</SelectItem>
-                    <SelectItem value="Pune">Pune</SelectItem>
-                    <SelectItem value="New York">New York</SelectItem>
-                    <SelectItem value="Los Angeles">Los Angeles</SelectItem>
-                    <SelectItem value="Chicago">Chicago</SelectItem>
-                    <SelectItem value="Boston">Boston</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="mb-4">
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                    Select City
+                  </label>
+                  <Select value={city} onValueChange={setCity}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a city" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full"> 
+                      <SelectItem value="All">All</SelectItem>
+                      <SelectItem value="Pune">Pune</SelectItem>
+                      <SelectItem value="Mumbai">Mumbai</SelectItem>
+                      <SelectItem value="Nagpur">Nagpur</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredCenters.map((center) => (
                     <Card key={center._id} className="overflow-hidden hover:shadow-md transition-shadow">
@@ -118,7 +115,7 @@ export default function Recycling() {
                     </Card>
                   ))}
                 </div>
-              </TabsContent>
+                </TabsContent>
               
               <TabsContent value="process" className={fadeUp()}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
