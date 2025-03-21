@@ -43,8 +43,7 @@ const featuredListings = [
   },
   {
     id: "4",
-    title: "Gaming PC Components",
-    description: "GTX 1080, 16GB RAM, Intel i7 processor. All parts tested and working.",
+    title: "Gaming PC ComponeX 1080, 16GB RAM, Intel i7 processor. All parts tested and working.",
     image: "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?q=80&w=1000&auto=format&fit=crop",
     price: 550,
     grade: "B" as const,
