@@ -6,6 +6,8 @@ import listingRoutes from './routes/listingRoutes';
 import recyclingRoutes from './routes/recyclingRoutes'; // Import recyclingRoutes
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import dotenv from 'dotenv';
+import sellerRoutes from './routes/sellerRoutes';
+import productRoutes from './routes/productRoutes';
 dotenv.config();
 
 // Connect to MongoDB
@@ -21,6 +23,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/recycling', recyclingRoutes); // Use recyclingRoutes
+app.use('/api/sellers', sellerRoutes);
+app.use('/api/products', productRoutes);
 
 // Error handling middleware
 app.use(notFound);
