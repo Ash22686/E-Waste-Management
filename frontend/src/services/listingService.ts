@@ -54,3 +54,8 @@ export const getScrapListings = async () => {
   const response = await axios.get(`${API_URL}/scrap`);
   return response.data;
 };
+
+export const getFeaturedListings = async () => {
+  const response = await axios.get(`${API_URL}?grade=A&limit=4`);
+  return response.data;
+};

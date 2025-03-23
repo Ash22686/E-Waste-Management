@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { FeatureCard } from "@/components/FeatureCard";
@@ -9,51 +9,27 @@ import { ArrowRight, Award, BadgeDollarSign, BarChart2, Clock, CreditCard, Lapto
 import { fadeIn, fadeUp, slideInRight } from "@/utils/animations";
 import { Link } from "react-router-dom";
 
-// Sample featured listings
-const featuredListings = [
-  {
-    id: "1",
-    title: "Dell XPS 13 Laptop",
-    description: "2020 model, working condition with minor screen scratches. Battery holds 85% capacity.",
-    image: "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=1000&auto=format&fit=crop",
-    price: 450,
-    grade: "A" as const,
-    location: "San Francisco, CA",
-    timeLeft: "2 days left"
-  },
-  {
-    id: "2",
-    title: "iPhone 11 Pro",
-    description: "64GB storage, battery health at 89%. Minor scratches on the back.",
-    image: "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?q=80&w=1000&auto=format&fit=crop",
-    price: 320,
-    grade: "B" as const,
-    location: "Boston, MA",
-    timeLeft: "1 day left"
-  },
-  {
-    id: "3",
-    title: "Samsung 4K Monitor",
-    description: "28\" 4K UHD Monitor. Working perfectly, selling due to upgrade.",
-    image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=1000&auto=format&fit=crop",
-    price: 220,
-    grade: "A" as const,
-    location: "Austin, TX",
-    timeLeft: "3 days left"
-  },
-  {
-    id: "4",
-    title: "Gaming PC Components",
-    description: "GTX 1080, 16GB RAM, Intel i7 processor. All parts tested and working.",
-    image: "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?q=80&w=1000&auto=format&fit=crop",
-    price: 550,
-    grade: "B" as const,
-    location: "Seattle, WA",
-    timeLeft: "12 hours left"
-  }
-];
-
 export default function Index() {
+  const [featuredListings, setFeaturedListings] = useState([]);
+
+  useEffect(() => {
+    const fetchFeaturedListings = async () => {
+      try {
+        const data = await getFeaturedListings();
+
+        // Randomize the listings and select only 4
+        const shuffledListings = data.data.listings.sort(() => 0.5 - Math.random());
+        const selectedListings = shuffledListings.slice(0, 4);
+
+        setFeaturedListings(selectedListings);
+      } catch (error) {
+        console.error("Failed to fetch featured listings:", error);
+      }
+    };
+
+    fetchFeaturedListings();
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Navbar />
