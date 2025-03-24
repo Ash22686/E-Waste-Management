@@ -7,12 +7,17 @@ const router = Router();
 
 // Public routes
 router.get('/', listingController.getAllListings);
+
+
+// ✅ Move `/seller` above `/:id`
+router.get('/seller', protect, restrictTo('seller'), listingController.getSellerListings);
+
 router.get('/:id', listingController.getListingById);
 
-// Protected routes
+// Protected routes (Authentication required)
 router.use(protect);
 
-// Seller only routes
+// Seller-only routes
 router.post(
   '/',
   restrictTo('seller'),
@@ -31,12 +36,6 @@ router.delete(
   '/:id',
   restrictTo('seller'),
   listingController.deleteListing
-);
-
-router.get(
-  '/seller/listings',
-  restrictTo('seller'),
-  listingController.getSellerListings
 );
 
 export default router;

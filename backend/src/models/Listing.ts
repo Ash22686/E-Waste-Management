@@ -1,56 +1,36 @@
-import mongoose, { Document, Schema } from 'mongoose';
-import { IListing } from '../types';
+import mongoose, { Schema, Document } from "mongoose";
 
-export interface ListingDocument extends Omit<IListing, '_id'>, Document {}
+export interface IListing extends Document {
+  title: string;
+  description: string;
+  image: string;
+  price: number;
+  grade: string;
+  location: string;
+  category: string;
+  timeLeft: string;
+  delay: number;
+  sellerId: mongoose.Types.ObjectId; // Reference to the seller in the User collection
+  estimatedWeight: number; // Weight of the item
+}
 
-const ListingSchema = new Schema(
+const ListingSchema: Schema = new Schema(
   {
-    title: {
-      type: String,
-      required: [true, 'Title is required'],
-      trim: true,
-      maxlength: [100, 'Title cannot be more than 100 characters'],
-    },
-    description: {
-      type: String,
-      required: [true, 'Description is required'],
-      trim: true,
-      maxlength: [1000, 'Description cannot be more than 1000 characters'],
-    },
-    image: {
-      type: String,
-      required: [true, 'Image is required'],
-    },
-    price: {
-      type: Number,
-      required: [true, 'Price is required'],
-      min: [0, 'Price cannot be negative'],
-    },
-    grade: {
-      type: String,
-      required: [true, 'Grade is required'],
-      enum: ['A', 'B', 'C'],
-    },
-    location: {
-      type: String,
-      required: [true, 'Location is required'],
-      trim: true,
-    },
-    category: {
-      type: String,
-      required: [true, 'Category is required'],
-      trim: true,
-    },
-    seller: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Seller is required'],
-    },
-    timeLeft: {
-      type: String,
-    },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    image: { type: String, required: true },
+    price: { type: Number, required: true },
+    grade: { type: String, required: true },
+    location: { type: String, required: true },
+    category: { type: String, required: true },
+    timeLeft: { type: String, required: true },
+    delay: { type: Number, required: true },
+    sellerId: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User collection
+    estimatedWeight: { type: Number, required: true }, // New field for estimated weight
   },
-  { timestamps: true }
+  {
+    timestamps: true, // Automatically add createdAt and updatedAt fields
+  }
 );
 
-export default mongoose.model<ListingDocument>('Listing', ListingSchema);
+export default mongoose.model<IListing>("Listing", ListingSchema);

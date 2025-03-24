@@ -3,11 +3,11 @@ import cors from 'cors';
 import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
 import listingRoutes from './routes/listingRoutes';
-import recyclingRoutes from './routes/recyclingRoutes'; // Import recyclingRoutes
+import recyclingRoutes from './routes/recyclingRoutes';
+import userRoutes from './routes/userRoutes'; // Import userRoutes
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import dotenv from 'dotenv';
-import sellerRoutes from './routes/sellerRoutes';
-import productRoutes from './routes/productRoutes';
+
 dotenv.config();
 
 // Connect to MongoDB
@@ -22,9 +22,8 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
-app.use('/api/recycling', recyclingRoutes); // Use recyclingRoutes
-app.use('/api/sellers', sellerRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/recycling', recyclingRoutes);
+app.use('/api/users', userRoutes); // Use userRoutes
 
 // Error handling middleware
 app.use(notFound);

@@ -1,236 +1,238 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Heatmap from "@/components/Heatmap";
 import { Navbar } from "@/components/Navbar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-
-const mockData = {
-	cities: [
-		{
-			name: "Pune",
-			locations: [
-				{
-					name: "Shivaji Nagar",
-					lat: 18.5304,
-					lng: 73.8567,
-					totalRequests: 120,
-					estimatedWeight: "1.2 tons",
-					colonies: [
-						{
-							name: "Colony A",
-							lat: 18.5314,
-							lng: 73.8577,
-							totalRequests: 50,
-							estimatedWeight: "500 kg",
-							users: [
-								{
-									name: "User 1",
-									items: ["Laptop", "Mobile"],
-									lat: 18.5324,
-									lng: 73.8587,
-									images: ["image1.jpg", "image2.jpg"],
-								},
-							],
-						},
-					],
-				},
-				{
-					name: "Kothrud",
-					lat: 18.5074,
-					lng: 73.8077,
-					totalRequests: 80,
-					estimatedWeight: "800 kg",
-					colonies: [
-						{
-							name: "Colony B",
-							lat: 18.5084,
-							lng: 73.8087,
-							totalRequests: 40,
-							estimatedWeight: "400 kg",
-							users: [
-								{
-									name: "User 2",
-									items: ["Monitor"],
-									lat: 18.5094,
-									lng: 73.8097,
-									images: ["image3.jpg"],
-								},
-							],
-						},
-					],
-				},
-			],
-		},
-		{
-			name: "Mumbai",
-			locations: [
-				{
-					name: "Andheri",
-					lat: 19.1197,
-					lng: 72.8468,
-					totalRequests: 150,
-					estimatedWeight: "1.5 tons",
-					colonies: [
-						{
-							name: "Colony C",
-							lat: 19.1207,
-							lng: 72.8478,
-							totalRequests: 70,
-							estimatedWeight: "700 kg",
-							users: [
-								{
-									name: "User 3",
-									items: ["Tablet"],
-									lat: 19.1217,
-									lng: 72.8488,
-									images: ["image4.jpg"],
-								},
-							],
-						},
-					],
-				},
-			],
-		},
-	],
-};
+import axios from "axios";
 
 export default function Scrap() {
-  const [selectedCity, setSelectedCity] = useState("Pune");
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [selectedColony, setSelectedColony] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [heatmapData, setHeatmapData] = useState([]);
   const [mapCenter, setMapCenter] = useState({ lat: 18.5204, lng: 73.8567 }); // Default center (Pune)
-  const [mapZoom, setMapZoom] = useState(12); // Default zoom level
+  const [mapZoom, setMapZoom] = useState(10); // Default zoom for 'city' level
+  const [selectedLevel, setSelectedLevel] = useState("city"); // city, area, colony, or user
+  const [selectedRegion, setSelectedRegion] = useState(null);
 
-  const cityData = mockData.cities.find((city) => city.name === selectedCity);
+  // Fetch sellers with listings from the backend
+  useEffect(() => {
+    const fetchSellersWithListings = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/users/sellers-with-listings");
+        setUsers(response.data.data);
+      } catch (error) {
+        console.error("Failed to fetch sellers with listings:", error);
+      }
+    };
 
-  const handleRegionClick = (region: any) => {
-    if (region.colonies) {
-      setSelectedLocation(region);
-      setSelectedColony(null);
-      setMapCenter({ lat: region.lat, lng: region.lng }); // Update map center
-      setMapZoom(14); // Zoom in to location level
-    } else if (region.users) {
-      setSelectedColony(region);
-      setMapCenter({ lat: region.lat, lng: region.lng }); // Update map center
-      setMapZoom(16); // Zoom in to colony level
+    fetchSellersWithListings();
+  }, []);
+
+  // Update heatmap data based on the selected level and region
+  useEffect(() => {
+    if (selectedLevel === "city") {
+      const cityHeatmap = users.reduce((acc, user) => {
+        const city = user.address.city;
+        if (!acc[city]) {
+          acc[city] = {
+            lat: user.address.coordinates.lat,
+            lng: user.address.coordinates.lng,
+            weight: 1,
+            name: city,
+            totalRequests: users.filter((u) => u.address.city === city).length,
+            estimatedWeight: `${users
+              .filter((u) => u.address.city === city)
+              .reduce((sum, u) => sum + parseFloat(u.estimatedWeight), 0)} kg`,
+          };
+        } else {
+          acc[city].weight += 1;
+        }
+        return acc;
+      }, {});
+      setHeatmapData(Object.values(cityHeatmap));
+    } else if (selectedLevel === "area") {
+      const areaHeatmap = users
+        .filter((user) => user.address.city === selectedRegion?.name)
+        .reduce((acc, user) => {
+          const area = user.address.area;
+          if (!acc[area]) {
+            acc[area] = {
+              lat: user.address.coordinates.lat,
+              lng: user.address.coordinates.lng,
+              weight: 1,
+              name: area,
+              totalRequests: users.filter(
+                (u) => u.address.area === area && u.address.city === selectedRegion?.name
+              ).length,
+              estimatedWeight: `${users
+                .filter((u) => u.address.area === area && u.address.city === selectedRegion?.name)
+                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight), 0)} kg`,
+            };
+          } else {
+            acc[area].weight += 1;
+          }
+          return acc;
+        }, {});
+      setHeatmapData(Object.values(areaHeatmap));
+    } else if (selectedLevel === "colony") {
+      const colonyHeatmap = users
+        .filter((user) => user.address.area === selectedRegion?.name)
+        .reduce((acc, user) => {
+          const colony = user.address.colony;
+          if (!acc[colony]) {
+            acc[colony] = {
+              lat: user.address.coordinates.lat,
+              lng: user.address.coordinates.lng,
+              weight: 1,
+              name: colony,
+              totalRequests: users.filter(
+                (u) => u.address.colony === colony && u.address.area === selectedRegion?.name
+              ).length,
+              estimatedWeight: `${users
+                .filter(
+                  (u) => u.address.colony === colony && u.address.area === selectedRegion?.name
+                )
+                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight), 0)} kg`,
+            };
+          } else {
+            acc[colony].weight += 1;
+          }
+          return acc;
+        }, {});
+      setHeatmapData(Object.values(colonyHeatmap));
+    } else if (selectedLevel === "user") {
+      setHeatmapData(
+        users
+          .filter((user) => user.address.colony === selectedRegion?.name)
+          .map((user) => ({
+            ...user.address.coordinates,
+            type: "user",
+            name: user.name,
+          }))
+      );
+    }
+  }, [selectedLevel, selectedRegion, users]);
+
+  // Handle region click to drill down into the next level
+  const handleRegionClick = (region) => {
+    if (selectedLevel === "city") {
+      setSelectedLevel("area");
+      setMapCenter({ lat: region.lat, lng: region.lng });
+      setMapZoom(12);
+      setSelectedRegion(region);
+    } else if (selectedLevel === "area") {
+      setSelectedLevel("colony");
+      setMapCenter({ lat: region.lat, lng: region.lng });
+      setMapZoom(14);
+      setSelectedRegion(region);
+    } else if (selectedLevel === "colony") {
+      setSelectedLevel("user");
+      setMapCenter({ lat: region.lat, lng: region.lng });
+      setMapZoom(16);
+      setSelectedRegion(region);
     }
   };
 
+  // Handle going back to the previous level
   const goBack = () => {
-    if (selectedColony) {
-      setSelectedColony(null);
-      setMapCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng }); // Reset to location center
-      setMapZoom(14); // Reset to location zoom
-    } else if (selectedLocation) {
-      setSelectedLocation(null);
-      setMapCenter({ lat: 18.5204, lng: 73.8567 }); // Reset to city center
-      setMapZoom(12); // Reset to city zoom
+    if (selectedLevel === "user") {
+      // Going back from 'user' to 'colony'
+      setSelectedLevel("colony");
+      setMapZoom(14);
+      // Find the parent area for the selected colony
+      const parentArea = users.find(
+        (user) => user.address.colony === selectedRegion?.name
+      )?.address.area;
+      const areaRegion = {
+        name: parentArea,
+        lat: users.find((user) => user.address.area === parentArea)?.address.coordinates.lat,
+        lng: users.find((user) => user.address.area === parentArea)?.address.coordinates.lng,
+      };
+      setSelectedRegion(areaRegion);
+      setMapCenter({ lat: areaRegion.lat, lng: areaRegion.lng });
+    } else if (selectedLevel === "colony") {
+      // Going back from 'colony' to 'area'
+      setSelectedLevel("area");
+      setMapZoom(12);
+      // Find the parent city for the selected area
+      const parentCity = users.find(
+        (user) => user.address.area === selectedRegion?.name
+      )?.address.city;
+      const cityRegion = {
+        name: parentCity,
+        lat: users.find((user) => user.address.city === parentCity)?.address.coordinates.lat,
+        lng: users.find((user) => user.address.city === parentCity)?.address.coordinates.lng,
+      };
+      setSelectedRegion(cityRegion);
+      setMapCenter({ lat: cityRegion.lat, lng: cityRegion.lng });
+    } else if (selectedLevel === "area") {
+      // Going back from 'area' to 'city'
+      setSelectedLevel("city");
+      setMapZoom(10);
+      setSelectedRegion(null);
+      setMapCenter({ lat: 18.5204, lng: 73.8567 }); // Reset to default center (Pune)
     }
   };
-
-  const heatmapData = selectedColony
-    ? selectedColony.users.map((user) => ({
-        lat: user.lat,
-        lng: user.lng,
-        weight: 1, // Equal weight for users
-      }))
-    : selectedLocation
-    ? selectedLocation.colonies.map((colony) => ({
-        lat: colony.lat,
-        lng: colony.lng,
-        weight: colony.totalRequests, // Weight based on total requests
-      }))
-    : cityData.locations.map((location) => ({
-        lat: location.lat,
-        lng: location.lng,
-        weight: location.totalRequests, // Weight based on total requests
-      }));
 
   return (
     <div className="min-h-screen">
       <Navbar />
       <div className="flex pt-16">
         {/* Map Section */}
-        <div className="w-2/3 h-screen sticky top-0">
-          <Heatmap data={heatmapData} center={mapCenter} zoom={mapZoom} onRegionClick={handleRegionClick} />
+        <div className="w-2/3 h-screen sticky top-0 p-4">
+          <Heatmap
+            data={heatmapData}
+            center={mapCenter}
+            zoom={mapZoom}
+            onRegionClick={handleRegionClick}
+          />
         </div>
 
         {/* Sidebar Section */}
         <div className="w-1/3 p-6 bg-gray-50 border-l">
-          <div className="mb-4">
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-              Select City
-            </label>
-            <Select value={selectedCity} onValueChange={setSelectedCity}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a city" />
-              </SelectTrigger>
-              <SelectContent>
-                {mockData.cities.map((city, index) => (
-                  <SelectItem key={index} value={city.name}>
-                    {city.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Go Back Button */}
-          {(selectedColony || selectedLocation) && (
+          {selectedRegion && (
             <Button variant="outline" className="mb-4 flex items-center gap-2" onClick={goBack}>
               <ArrowLeft className="h-4 w-4" />
               Go Back
             </Button>
           )}
 
-          {/* Content */}
-          {selectedColony ? (
-            <div>
-              <h2 className="text-lg font-bold mb-4">Users in {selectedColony.name}</h2>
-              {selectedColony.users.map((user, index) => (
-                <Card key={index} className="mb-4">
-                  <CardHeader>
-                    <CardTitle>{user.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>Items: {user.items.join(", ")}</CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : selectedLocation ? (
-            <div>
-              <h2 className="text-lg font-bold mb-4">Colonies in {selectedLocation.name}</h2>
-              {selectedLocation.colonies.map((colony, index) => (
-                <Card key={index} className="mb-4 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleRegionClick(colony)}>
-                  <CardHeader>
-                    <CardTitle>{colony.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>Total Requests: {colony.totalRequests}</CardDescription>
-                    <CardDescription>Estimated Weight: {colony.estimatedWeight}</CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div>
-              <h2 className="text-lg font-bold mb-4">Locations in {selectedCity}</h2>
-              {cityData.locations.map((location, index) => (
-                <Card key={index} className="mb-4 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleRegionClick(location)}>
-                  <CardHeader>
-                    <CardTitle>{location.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>Total Requests: {location.totalRequests}</CardDescription>
-                    <CardDescription>Estimated Weight: {location.estimatedWeight}</CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+          <div>
+            <h2 className="text-lg font-bold mb-4">
+              {selectedLevel === "user"
+                ? `Users in ${selectedRegion?.name || "Selected Region"}`
+                : `Heatmap for ${selectedLevel}`}
+            </h2>
+            {selectedLevel === "user"
+              ? users
+                  .filter((user) => user.address.colony === selectedRegion?.name)
+                  .map((user, index) => (
+                    <Card key={index} className="mb-4">
+                      <CardHeader>
+                        <CardTitle>{user.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <CardDescription>Items: {user.items.join(", ")}</CardDescription>
+                        <CardDescription>Estimated Weight: {user.estimatedWeight}</CardDescription>
+                      </CardContent>
+                    </Card>
+                  ))
+              : heatmapData.map((region, index) => (
+                  <Card
+                    key={index}
+                    className="mb-4 cursor-pointer hover:bg-gray-100 transition"
+                    onClick={() => handleRegionClick(region)}
+                  >
+                    <CardHeader>
+                      <CardTitle>{region.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription>Total Requests: {region.totalRequests}</CardDescription>
+                      <CardDescription>Estimated Weight: {region.estimatedWeight}</CardDescription>
+                    </CardContent>
+                  </Card>
+                ))}
+          </div>
         </div>
       </div>
     </div>

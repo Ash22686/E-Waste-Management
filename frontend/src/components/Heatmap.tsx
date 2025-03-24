@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { GoogleMap, HeatmapLayer, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, Circle, useJsApiLoader } from "@react-google-maps/api";
 
 const mapContainerStyle = {
   width: "100%",
@@ -17,9 +17,9 @@ const Heatmap = ({
   zoom: number;
   onRegionClick: (region: any) => void;
 }) => {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyDjdQxfohYDiWMhbc8GZ8TR2W4htx4so1w", // Replace with your API key
-    libraries: ["visualization"], // Required for heatmap
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: "AIzaSyDjdQxfohYDiWMhbc8GZ8TR2W4htx4so1w",
+    libraries: ["visualization"],
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -30,31 +30,82 @@ const Heatmap = ({
 
   useEffect(() => {
     if (map) {
-      map.setCenter(center); // Update the map's center
-      map.setZoom(zoom); // Update the map's zoom level
+      map.setCenter(center);
+      map.setZoom(zoom);
     }
   }, [center, zoom, map]);
 
-  if (!isLoaded) return <div>Loading...</div>;
+  // Determine circle color based on density (totalRequests)
+  const getCircleColor = (totalRequests: number, maxRequests: number) => {
+    const density = totalRequests / maxRequests;
+    // Simple gradient from light red (#FF9999) to dark red (#8B0000)
+    if (density > 0.75) return "#8B0000"; // Dark red
+    if (density > 0.5) return "#FF4040"; // Medium red
+    if (density > 0.25) return "#FF6666"; // Light red
+    return "#FF9999"; // Very light red
+  };
+
+  // Determine circle radius based on the level (city, area, colony)
+  const getCircleRadius = (regionName: string, totalRequests: number) => {
+    // Approximate radius in meters (adjust based on real geographic sizes)
+    if (regionName.includes("Pune") || regionName.includes("Mumbai")) {
+      return 20000; // Larger radius for cities (~20km)
+    } else if (["Shivaji Nagar", "Kothrud", "Hinjewadi", "Andheri", "Bandra", "Goregaon", "Dadar"].includes(regionName)) {
+      return 3000; // Smaller radius for areas (~3km)
+    } else {
+      return 1000; // Smallest radius for colonies (~1km)
+    }
+  };
+
+  if (loadError) {
+    return <div className="text-red-500">Error loading Google Maps API: {loadError.message}</div>;
+  }
+
+  if (!isLoaded) {
+    return <div className="text-gray-500">Loading map...</div>;
+  }
+
+  const maxRequests = Math.max(...data.map((d) => d.totalRequests || 1)); // Avoid division by zero
 
   return (
-    <GoogleMap
-      mapContainerStyle={mapContainerStyle}
-      center={center}
-      zoom={zoom}
-      onLoad={handleMapLoad}
-    >
-      <HeatmapLayer
-        data={data.map((point) => ({
-          location: new google.maps.LatLng(point.lat, point.lng),
-          weight: point.weight, // Weight based on e-waste type/quantity
-        }))}
-        options={{
-          radius: 30,
-          opacity: 0.7,
-        }}
-      />
-    </GoogleMap>
+    <div className="relative rounded-lg border shadow-md overflow-hidden">
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={center}
+        zoom={zoom}
+        onLoad={handleMapLoad}
+      >
+        {data.some((point) => point.type === "user") ? (
+          // Show markers for users
+          data.map((point, index) =>
+            point.type === "user" ? (
+              <Marker
+                key={index}
+                position={{ lat: point.lat, lng: point.lng }}
+                onClick={() => onRegionClick(point)}
+              />
+            ) : null
+          )
+        ) : (
+          // Show circles based on density
+          data.map((region, index) => (
+            <Circle
+              key={index}
+              center={{ lat: region.lat, lng: region.lng }}
+              radius={getCircleRadius(region.name, region.totalRequests)}
+              options={{
+                fillColor: getCircleColor(region.totalRequests || 1, maxRequests),
+                fillOpacity: 0.5,
+                strokeColor: getCircleColor(region.totalRequests || 1, maxRequests),
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+              }}
+              onClick={() => onRegionClick(region)}
+            />
+          ))
+        )}
+      </GoogleMap>
+    </div>
   );
 };
 

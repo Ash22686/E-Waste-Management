@@ -1,80 +1,61 @@
 import Listing from '../models/Listing';
-import { IListing, IListingRequest } from '../types';
+import { IListing } from '../types';
 
 // Get all listings
 export const getAllListings = async (): Promise<IListing[]> => {
-  const listings = await Listing.find().sort({ createdAt: -1 });
-  return listings.map(listing => listing.toObject() as IListing);
+  const listings = await Listing.find().sort({ createdAt: -1 }).lean(); // Use .lean() to return plain JavaScript objects
+  return listings as unknown as IListing[]; // Explicitly cast to IListing[]
+};
+
+// Get seller-specific listings
+export const getSellerListings = async (sellerId: string): Promise<IListing[]> => {
+  const listings = await Listing.find({ sellerId }).sort({ createdAt: -1 }).lean();
+  return listings as unknown as IListing[];
 };
 
 // Get listing by ID
 export const getListingById = async (id: string): Promise<IListing | null> => {
-  const listing = await Listing.findById(id).populate('seller', 'firstName lastName email');
-  return listing ? listing.toObject() as IListing : null;
+  const listing = await Listing.findById(id).populate('seller', 'firstName lastName email').lean(); // Use .lean()
+  return listing as unknown as IListing | null; // Explicitly cast to IListing or null
 };
 
 // Create listing
-export const createListing = async (
-  listingData: IListingRequest,
-  sellerId: string
-): Promise<IListing> => {
-  const listing = await Listing.create({
-    ...listingData,
-    seller: sellerId,
-  });
-  
-  return listing.toObject() as IListing;
+export const createListing = async (listingData: Partial<IListing>): Promise<IListing> => {
+  const listing = await Listing.create(listingData);
+  return listing.toObject() as unknown as IListing; // Use .toObject() and explicitly cast to IListing
 };
 
 // Update listing
 export const updateListing = async (
   id: string,
-  listingData: Partial<IListingRequest>,
+  listingData: Partial<IListing>,
   sellerId: string
 ): Promise<IListing> => {
-  // Check if listing exists and belongs to seller
-  const existingListing = await Listing.findOne({
-    _id: id,
-    seller: sellerId,
-  });
-  
+  const existingListing = await Listing.findOne({ _id: id, sellerId });
   if (!existingListing) {
     throw new Error('Listing not found or unauthorized');
   }
-  
-  // Update listing
-  const updatedListing = await Listing.findByIdAndUpdate(
-    id,
-    listingData,
-    { new: true, runValidators: true }
-  ).populate('seller', 'firstName lastName email');
-  
+
+  const updatedListing = await Listing.findByIdAndUpdate(id, listingData, {
+    new: true,
+    runValidators: true,
+  })
+    .populate('seller', 'firstName lastName email')
+    .lean(); // Use .lean()
+
   if (!updatedListing) {
     throw new Error('Listing not found');
   }
-  
-  return updatedListing.toObject() as IListing;
+
+  return updatedListing as unknown as IListing; // Explicitly cast to IListing
 };
 
 // Delete listing
 export const deleteListing = async (id: string, sellerId: string): Promise<void> => {
-  // Check if listing exists and belongs to seller
-  const existingListing = await Listing.findOne({
-    _id: id,
-    seller: sellerId,
-  });
-  
+  const existingListing = await Listing.findOne({ _id: id, sellerId });
   if (!existingListing) {
     throw new Error('Listing not found or unauthorized');
   }
-  
-  await Listing.findByIdAndDelete(id);
-};
 
-// Get seller listings
-export const getSellerListings = async (sellerId: string): Promise<IListing[]> => {
-  const listings = await Listing.find({ seller: sellerId })
-    .sort({ createdAt: -1 });
-  
-  return listings.map(listing => listing.toObject() as IListing);
+  await Listing.findByIdAndDelete(id);
 };

@@ -18,9 +18,8 @@ export default function Marketplace() {
     const fetchListings = async () => {
       try {
         const response = await getAllListings();
-        const data = response.data;
-        setListings(data.listings);
-        setFilteredListings(data.listings);
+        setListings(response.data); // Ensure response.data contains the listings array
+        setFilteredListings(response.data);
       } catch (error) {
         console.error("Failed to fetch listings:", error);
       }
@@ -28,18 +27,6 @@ export default function Marketplace() {
 
     fetchListings();
   }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [priceRange, selectedGrades, selectedCategories]);
-
-  const toggleGrade = (grade: string) => {
-    setSelectedGrades(prev => ({ ...prev, [grade]: !prev[grade] }));
-  };
-
-  const toggleCategory = (category: string) => {
-    setSelectedCategories(prev => ({ ...prev, [category]: !prev[category] }));
-  };
 
   const applyFilters = () => {
     let filtered = listings;
@@ -62,6 +49,10 @@ export default function Marketplace() {
     setFilteredListings(filtered);
   };
 
+  useEffect(() => {
+    applyFilters();
+  }, [priceRange, selectedGrades, selectedCategories]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -83,9 +74,9 @@ export default function Marketplace() {
             priceRange={priceRange}
             setPriceRange={setPriceRange}
             selectedGrades={selectedGrades}
-            toggleGrade={toggleGrade}
+            toggleGrade={(grade) => setSelectedGrades(prev => ({ ...prev, [grade]: !prev[grade] }))}
             selectedCategories={selectedCategories}
-            toggleCategory={toggleCategory}
+            toggleCategory={(category) => setSelectedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
             isMobileFilterOpen={isMobileFilterOpen}
           />
           

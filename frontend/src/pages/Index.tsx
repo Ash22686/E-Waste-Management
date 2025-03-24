@@ -8,27 +8,30 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Award, BadgeDollarSign, BarChart2, Clock, CreditCard, Laptop, Lock, Monitor, Phone, Recycle, RefreshCw, Shield, ShieldCheck, Smartphone, ThumbsUp, Upload } from "lucide-react";
 import { fadeIn, fadeUp, slideInRight } from "@/utils/animations";
 import { Link } from "react-router-dom";
+import { getAllListings } from "@/services/listingService";
 
 export default function Index() {
   const [featuredListings, setFeaturedListings] = useState([]);
 
   useEffect(() => {
-    const fetchFeaturedListings = async () => {
+    const fetchListings = async () => {
       try {
-        const data = await getFeaturedListings();
+        const response = await getAllListings(); // Fetch all listings
+        const listings = response?.data || []; // Ensure data is correctly structured
 
-        // Randomize the listings and select only 4
-        const shuffledListings = data.data.listings.sort(() => 0.5 - Math.random());
+        // Shuffle the listings and select 4 random ones
+        const shuffledListings = [...listings].sort(() => 0.5 - Math.random());
         const selectedListings = shuffledListings.slice(0, 4);
 
         setFeaturedListings(selectedListings);
       } catch (error) {
-        console.error("Failed to fetch featured listings:", error);
+        console.error("Failed to fetch listings:", error);
       }
     };
 
-    fetchFeaturedListings();
+    fetchListings();
   }, []);
+  
 
   return (
     <div className="min-h-screen">

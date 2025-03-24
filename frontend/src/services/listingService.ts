@@ -1,61 +1,94 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = 'http://localhost:5000/api/listings';
+const API_BASE_URL = "http://localhost:5000/api/listings";
 
+// Get all listings
 export const getAllListings = async () => {
-  const response = await axios.get(API_URL);
-  return response.data;
+  try {
+    const response = await axios.get(`${API_BASE_URL}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    throw error;
+  }
 };
 
-export const getListingById = async (id: string) => {
-  const response = await axios.get(`${API_URL}/${id}`);
-  return response.data;
-};
-
-export const createListing = async (listingData: any, token: string) => {
-  const response = await axios.post(API_URL, listingData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
-};
-
-export const updateListing = async (id: string, listingData: any, token: string) => {
-  const response = await axios.put(`${API_URL}/${id}`, listingData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
-};
-
-export const deleteListing = async (id: string, token: string) => {
-  const response = await axios.delete(`${API_URL}/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
+// Get seller-specific listings
 export const getSellerListings = async (token: string) => {
-  const response = await axios.get(`${API_URL}/seller/listings`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
+  try {
+    const response = await axios.get(`${API_BASE_URL}/seller`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching seller listings:', error);
+    throw error;
+  }
 };
 
-export const getScrapListings = async () => {
-  const response = await axios.get(`${API_URL}/scrap`);
-  return response.data;
+// Get a single listing by ID
+export const getListingById = async (id: string) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching listing by ID:", error);
+    throw error;
+  }
 };
 
+// Create a new listing
+export const createListing = async (formData: FormData, token: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating listing:', error);
+    throw error;
+  }
+};
+
+// Update an existing listing
+export const updateListing = async (id: string, formData: FormData, token: string) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/${id}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error updating listing:", error);
+    throw error;
+  }
+};
+
+// Delete a listing
+export const deleteListing = async (id: string, token: string) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting listing:", error);
+    throw error;
+  }
+};
+
+// Get featured listings
 export const getFeaturedListings = async () => {
-  const response = await axios.get(`${API_URL}?grade=A&limit=4`);
-  return response.data;
+  try {
+    const response = await axios.get(`${API_BASE_URL}/featured`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching featured listings:', error);
+    throw error;
+  }
 };
