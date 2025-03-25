@@ -7,6 +7,7 @@ import recyclingRoutes from './routes/recyclingRoutes';
 import userRoutes from './routes/userRoutes'; // Import userRoutes
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import dotenv from 'dotenv';
+import requestRoutes from './routes/requestRoutes';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/recycling', recyclingRoutes);
 app.use('/api/users', userRoutes); // Use userRoutes
+app.use('/api/requests', requestRoutes);
 
 // Error handling middleware
 app.use(notFound);

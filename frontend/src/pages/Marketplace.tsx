@@ -6,6 +6,7 @@ import { MarketplaceListings } from "@/components/marketplace/MarketplaceListing
 import { MarketplaceMobileFilters } from "@/components/marketplace/MarketplaceMobileFilters";
 import { getAllListings } from "@/services/listingService";
 
+
 export default function Marketplace() {
   const [listings, setListings] = useState([]);
   const [filteredListings, setFilteredListings] = useState([]);
