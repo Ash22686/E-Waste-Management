@@ -88,8 +88,8 @@ export default function BuyerDashboard() {
   }, [navigate]);
 
   const handleCancelRequest = (requestId: string) => {
-    setRequests(prevRequests => 
-      prevRequests.filter(request => request.id !== requestId)
+    setRequests((prevRequests) =>
+      prevRequests.filter((request) => request.id !== requestId)
     );
   };
 
@@ -98,111 +98,126 @@ export default function BuyerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-r from-green-500 to-blue-500">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-eco-500 to-tech-500 pt-32 pb-16">
+      <div className="pt-24 pb-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center text-white">
-            {/* Back Button */}
-            <div className="absolute left-4 top-4">
+          <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow">
+            <div className="flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate('/')}
-                className="text-white hover:bg-white/10"
+                className="mr-4 text-gray-600 hover:bg-gray-100"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
+              <h1 className="text-3xl font-bold text-gray-800">
+                Buyer Dashboard - Welcome, {user.firstName}!
+              </h1>
             </div>
-
-            <h1 className="text-4xl font-bold mb-4">Welcome, {user.firstName}!</h1>
-            <p className="text-xl opacity-90 mb-8">
-              Manage your product requests
-            </p>
+            {/* Add additional buttons here if SellerDashboard has them */}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Your Requests Section */}
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Your Requests</h2>
-          <div className="space-y-4">
-            {requests.map((request) => {
-              const product = dummyProducts.find(p => p.id === request.productId);
-              return (
-                <div key={request.id} className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* Product Image */}
-                    {product && (
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full md:w-48 h-48 object-cover rounded-lg"
-                      />
-                    )}
-
-                    {/* Product Details */}
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2">{request.productName}</h3>
-                      {product && (
-                        <p className="text-sm text-gray-600 mb-4">{product.description}</p>
-                      )}
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        {product && (
-                          <>
-                            <div>
-                              <span className="font-medium">Price:</span> ₹{product.price}
+      <div className="container mx-auto px-4 pb-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Requests</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Seller
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Request Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request) => {
+                  const product = dummyProducts.find((p) => p.id === request.productId);
+                  return (
+                    <tr key={request.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {product && (
+                            <img
+                              className="h-10 w-10 rounded-md object-cover"
+                              src={product.image}
+                              alt={product.name}
+                            />
+                          )}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {request.productName}
                             </div>
-                            <div>
-                              <span className="font-medium">Seller:</span> {product.seller}
-                            </div>
-                          </>
-                        )}
-                        <div>
-                          <span className="font-medium">Request Date:</span> {new Date(request.requestDate).toLocaleDateString()}
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium">Status:</span>
-                          <Badge
-                            variant={
-                              request.status === 'pending'
-                                ? 'secondary'
-                                : request.status === 'accepted'
-                                ? 'default'
-                                : 'destructive'
-                            }
-                            className="ml-2"
-                          >
-                            {request.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col justify-center gap-2">
-                      {request.status === 'pending' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleCancelRequest(request.id)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {product ? `₹${product.price}` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {product ? product.seller : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.requestDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge
+                          variant={
+                            request.status === 'pending'
+                              ? 'secondary'
+                              : request.status === 'accepted'
+                              ? 'default'
+                              : 'destructive'
+                          }
                         >
-                          Cancel Request
+                          {request.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {request.status === 'pending' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelRequest(request.id)}
+                            className="mr-2 hover:bg-gray-100"
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-600 hover:bg-gray-100"
+                        >
+                          View
                         </Button>
-                      )}
-                      <Button variant="ghost" size="sm">
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
