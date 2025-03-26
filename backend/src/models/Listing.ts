@@ -9,7 +9,6 @@ export interface IListing extends Document {
   location: string;
   category: string;
   timeLeft: string;
-  delay: number;
   sellerId: mongoose.Types.ObjectId; // Reference to the seller in the User collection
   estimatedWeight: number; // Weight of the item
 }
@@ -24,7 +23,6 @@ const ListingSchema: Schema = new Schema(
     location: { type: String, required: true },
     category: { type: String, required: true },
     timeLeft: { type: String, required: true },
-    delay: { type: Number, required: true },
     sellerId: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User collection
     estimatedWeight: { type: Number, required: true }, // New field for estimated weight
   },
