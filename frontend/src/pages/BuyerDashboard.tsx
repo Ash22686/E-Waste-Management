@@ -1,75 +1,21 @@
-import { User } from '@/types/types';
-import { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '@/services/authService';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Product, BuyerRequest } from '@/types/types';
-import { ArrowLeft } from 'lucide-react';
-
-// Dummy data
-const dummyRequests: BuyerRequest[] = [
-  {
-    id: '1',
-    productId: '1',
-    productName: 'MacBook Pro 2019',
-    status: 'pending',
-    requestDate: '2024-03-15',
-    responseDate: null,
-  },
-  {
-    id: '2',
-    productId: '2',
-    productName: 'iPhone 12 Pro',
-    status: 'accepted',
-    requestDate: '2024-03-10',
-    responseDate: '2024-03-12',
-  },
-  {
-    id: '3',
-    productId: '2',
-    productName: 'Samsung Galaxy S21',
-    status: 'rejected',
-    requestDate: '2024-03-10',
-    responseDate: '2024-03-12',
-  },
-];
-
-const dummyProducts: Product[] = [
-  {
-    id: '1',
-    name: 'MacBook Pro 2019',
-    description: '16GB RAM, 512GB SSD, Excellent condition',
-    price: 25000,
-    image: 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?q=80&w=1000&auto=format&fit=crop',
-    category: 'Laptops',
-    condition: 'used',
-    seller: 'Tech Resellers',
-    createdAt: '2024-03-10',
-    requests: [],
-  },
-  {
-    id: '2',
-    name: 'iPhone 12 Pro',
-    description: '64GB storage, battery health at 89%',
-    price: 15000,
-    image: 'https://images.unsplash.com/photo-1603015269169-225cb700e29a?q=80&w=1000&auto=format&fit=crop',
-    category: 'Mobile Phones',
-    condition: 'used',
-    seller: 'Mobile Hub',
-    createdAt: '2024-03-10',
-    requests: [],
-  },
-];
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getCurrentUser } from "@/services/authService";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { BuyerRequest } from "@/types/types";
+import { Navbar } from "@/components/Navbar";
 
 export default function BuyerDashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [requests, setRequests] = useState<BuyerRequest[]>(dummyRequests);
+  const [user, setUser] = useState<any>(null);
+  const [requests, setRequests] = useState<BuyerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
-  // User authentication check
   useEffect(() => {
-    const loadUser = async () => {
+    const loadData = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
         navigate('/auth/login');
@@ -77,148 +23,169 @@ export default function BuyerDashboard() {
       }
 
       try {
+        // Load user data
         const userData = await getCurrentUser(token);
         setUser(userData.user);
+
+        // Load requests
+        const response = await fetch('http://localhost:5000/api/requests/buyer', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) setRequests(data.data);
       } catch (error) {
-        navigate('/auth/login');
+        alert("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadUser();
-  }, [navigate]);
+    loadData();
+  }, [navigate, refreshKey]);
 
-  const handleCancelRequest = (requestId: string) => {
-    setRequests((prevRequests) =>
-      prevRequests.filter((request) => request.id !== requestId)
-    );
+
+  const fetchRequests = async (token: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/requests/my-requests', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setRequests(data.data);
+      } else {
+        alert(data.message || "Failed to load requests");
+      }
+      
+    } catch (error) {
+      console.error("Fetch requests error:", error);
+      alert("Failed to load requests. Please try again.");
+    }
   };
 
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+  const handleCancelRequest = async (requestId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/requests/${requestId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setRequests(prev => prev.map(req => 
+          req._id === requestId ? { ...req, status: 'cancelled' } : req
+        ));
+        alert("Request cancelled successfully");
+      }
+    } catch (error) {
+      alert("Failed to cancel request");
+    }
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-green-500 to-blue-500">
-      {/* Header Section */}
+    <div className="min-h-screen bg-gray-50">
+          <Navbar />
+     <div className="min-h-screen bg-gradient-to-r from-green-500 to-blue-500">
       <div className="pt-24 pb-8">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/')}
-                className="mr-4 text-gray-600 hover:bg-gray-100"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Buyer Dashboard - Welcome, {user.firstName}!
-              </h1>
-            </div>
-            {/* Add additional buttons here if SellerDashboard has them */}
+          <div className="flex items-center bg-white p-4 rounded-lg shadow mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/')}
+              className="mr-4"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-3xl font-bold">Welcome, {user.firstName}!</h1>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 pb-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Requests</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Seller
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Request Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {requests.map((request) => {
-                  const product = dummyProducts.find((p) => p.id === request.productId);
-                  return (
-                    <tr key={request.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+          <h2 className="text-xl font-semibold mb-4">Your Requests</h2>
+          
+          {requests.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-4">No purchase requests found</p>
+              <Button onClick={() => navigate('/marketplace')}>
+                Browse Marketplace
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {requests.map(request => (
+                    <tr key={request._id}>
+                      <td className="px-6 py-4">
                         <div className="flex items-center">
-                          {product && (
-                            <img
-                              className="h-10 w-10 rounded-md object-cover"
-                              src={product.image}
-                              alt={product.name}
-                            />
-                          )}
+                          <img
+                            src={request.listing.image}
+                            alt={request.listing.title}
+                            className="h-12 w-12 object-cover rounded-md"
+                          />
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {request.productName}
-                            </div>
+                            <div className="font-medium">{request.listing.title}</div>
+                            <div className="text-sm text-gray-500">{request.listing.category}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product ? `₹${product.price}` : 'N/A'}
+                      <td className="px-6 py-4">₹{request.listing.price}</td>
+                      <td className="px-6 py-4">
+                        {request.listing.sellerId?.firstName} {request.listing.sellerId?.lastName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product ? product.seller : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(request.requestDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge
-                          variant={
-                            request.status === 'pending'
-                              ? 'secondary'
-                              : request.status === 'accepted'
-                              ? 'default'
-                              : 'destructive'
-                          }
-                        >
+                      <td className="px-6 py-4">
+                        <Badge variant={
+                          request.status === 'pending' ? 'secondary' :
+                          request.status === 'accepted' ? 'default' :
+                          'destructive'
+                        }>
                           {request.status}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4">
                         {request.status === 'pending' && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleCancelRequest(request.id)}
-                            className="mr-2 hover:bg-gray-100"
+                            onClick={() => handleCancelRequest(request._id)}
                           >
                             Cancel
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-600 hover:bg-gray-100"
-                        >
-                          View
-                        </Button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

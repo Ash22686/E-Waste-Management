@@ -11,14 +11,38 @@ export interface Product {
     requests: Request[];
   }
   
+  // src/types/types.ts
   export interface BuyerRequest {
-    id: string;
-    productId: string;
-    productName: string;
-    status: 'pending' | 'accepted' | 'rejected';
-    requestDate: string;
-    responseDate: string | null;
-    message?: string;
+    _id: string;
+    status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
+    createdAt: string;
+    updatedAt: string;
+    listing: {
+      _id: string;
+      title: string;
+      price: number;
+      image: string;
+      category: string;
+      timeLeft: string; // Add this
+      sellerId: {
+        _id: string;
+        firstName: string;
+        lastName: string;
+      };
+    };
+  }
+
+  export interface Listing {
+    _id: string;
+    title: string;
+    description: string;
+    price: number;
+    image: string;
+    category: string;
+    grade: string;
+    location: string;
+    sellerId: string;
+    timeLeft: string;
   }
   
   export interface User {

@@ -6,22 +6,21 @@ const requestSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  seller: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
   listing: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Listing',
     required: true
   },
+  seller: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   status: {
     type: String,
-    enum: ['pending', 'accepted', 'rejected', 'completed'],
+    enum: ['pending', 'accepted', 'rejected', 'completed', 'cancelled'],
     default: 'pending'
   },
-  message: String,
   createdAt: {
     type: Date,
     default: Date.now
