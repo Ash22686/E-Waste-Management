@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/services/authService";
 import { createListing, getSellerListings, deleteListing, updateListing } from "@/services/listingService";
 import { Navbar } from "@/components/Navbar";
+import SellerRequests from "@/components/SellerRequests";
 
 export default function SellerDashboard() {
   const [user, setUser] = useState(null);
@@ -328,6 +329,20 @@ export default function SellerDashboard() {
               >
                 My Listings
               </button>
+
+              {/* Requests Tab Button */}
+              <button
+                        className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === "requests"
+                            ? "border-blue-500 text-blue-600" // Different color
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        }`}
+                        onClick={() => setActiveTab("requests")}
+                        // ... other attributes
+                    >
+                        Requests {/* Label */}
+                    </button>
+
             </nav>
           </div>
 
@@ -406,6 +421,16 @@ export default function SellerDashboard() {
               )}
             </div>
           )}
+
+{activeTab === "requests" && (
+                    <div>
+
+                       
+                        <SellerRequests />
+                        
+
+                    </div>
+                )}
         </div>
 
         {/* Add Listing Modal */}

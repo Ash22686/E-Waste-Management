@@ -57,7 +57,7 @@ export const getBuyerRequests = async (req: AuthRequest, res: Response) => {
         populate: {
           path: 'sellerId', // Match Listing schema field name
           model: 'User', // Explicitly specify model
-          select: 'firstName lastName' // Confirm fields exist in User
+          select: 'firstName lastName email address' // Confirm fields exist in User
         }
       })
       .lean(); // Convert to plain JS object
@@ -72,26 +72,73 @@ export const getBuyerRequests = async (req: AuthRequest, res: Response) => {
 export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
-    const { id } = req.params;
+    const { id: requestId } = req.params; // Get request ID from URL params
+    const sellerId = req.user!._id; // Get seller ID from authenticated user
 
-    const validStatuses = ['accepted', 'rejected', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status' });
+    // Define valid statuses a seller can set
+    const validSellerStatuses = ['accepted', 'rejected'];
+    if (!validSellerStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: `Invalid status update by seller. Must be one of: ${validSellerStatuses.join(', ')}` });
     }
 
-    const updatedRequest = await RequestModel.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    ).populate('listing');
+    // Find the request first to verify ownership and current status
+    const request = await RequestModel.findById(requestId);
 
-    if (!updatedRequest) {
+    if (!request) {
       return res.status(404).json({ success: false, message: 'Request not found' });
     }
 
-    res.status(200).json({ success: true, data: updatedRequest });
+    // --- SECURITY CHECK: Ensure the logged-in user is the seller for this request ---
+    if (request.seller.toString() !== sellerId.toString()) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to update this request' });
+    }
+
+    // Optional: Check if the request is still in 'pending' state before allowing accept/reject
+    if (request.status !== 'pending') {
+       return res.status(400).json({ success: false, message: `Request is no longer pending (current status: ${request.status})` });
+    }
+
+    // Proceed with the update
+    request.status = status;
+    request.updatedAt = new Date(); // Manually update updatedAt if not using mongoose timestamps plugin for updates
+    const updatedRequest = await request.save();
+
+    // Populate details for the response if needed (optional, depends on frontend needs)
+    const populatedUpdateRequest = await RequestModel.findById(updatedRequest._id)
+      .populate({ path: 'listing', select: 'title' })
+      .populate({ path: 'buyer', select: 'firstName lastName' });
+
+
+    res.status(200).json({ success: true, data: populatedUpdateRequest });
+
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Error updating request status:", error); // Log error
+    res.status(500).json({ success: false, message: 'Failed to update request status', error: error.message });
+  }
+};
+
+
+export const getSellerRequests = async (req: AuthRequest, res: Response) => {
+  try {
+    const sellerId = req.user!._id; // Get seller ID from authenticated user
+
+    const requests = await RequestModel.find({ seller: sellerId })
+      .populate({
+        path: 'listing', // Populate listing details
+        select: 'title image price category', // Select desired fields
+      })
+      .populate({
+        path: 'buyer', // Populate buyer details
+        select: 'firstName lastName email', // Select desired fields
+      })
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .lean(); // Use lean for performance if not modifying docs
+
+    res.status(200).json({ success: true, data: requests });
+
+  } catch (error: any) {
+    console.error("Error fetching seller requests:", error); // Log error
+    res.status(500).json({ success: false, message: 'Failed to fetch requests', error: error.message });
   }
 };
 
@@ -120,3 +167,4 @@ export const cancelRequest = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
