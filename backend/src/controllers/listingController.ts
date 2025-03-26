@@ -104,28 +104,26 @@ export const createListing = async (req: Request, res: Response): Promise<void> 
 // Update listing
 export const updateListing = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: 'Not authenticated',
-      });
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Ensure the sellerId is not overwritten
+    delete updates.sellerId;
+
+    const updatedListing = await Listing.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedListing) {
+      res.status(404).json({ success: false, message: "Listing not found" });
       return;
     }
 
-    const { id } = req.params;
-    const sellerId = req.user._id.toString();
-
-    const updatedListing = await listingService.updateListing(id, req.body, sellerId);
-
-    res.status(200).json({
-      success: true,
-      data: updatedListing,
-    });
+    res.status(200).json({ success: true, data: updatedListing });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Error updating listing:", error);
+    res.status(500).json({ success: false, message: "Failed to update listing" });
   }
 };
 

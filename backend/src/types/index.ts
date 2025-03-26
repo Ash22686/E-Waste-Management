@@ -14,6 +14,7 @@ export interface Address {
 
 // User interfaces
 export interface IUser {
+  id: any;
   role: string;
   _id: string;
   firstName: string;
