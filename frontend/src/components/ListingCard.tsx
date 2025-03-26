@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { fadeUp } from "@/utils/animations";
 import { cn } from "@/lib/utils";
-import { Clock, MapPin, ShoppingBag } from "lucide-react";
+import { Clock, MapPin, ShoppingBag, Eye } from "lucide-react";
 
 interface ListingCardProps {
   id: string;
@@ -22,6 +22,8 @@ interface ListingCardProps {
   timeLeft: string;
   delay: number;
   className?: string;
+  onRequest?: () => void;
+  onViewDetails?: () => void;
 }
 
 export function ListingCard({ 
@@ -36,7 +38,9 @@ export function ListingCard({
   seller,
   timeLeft,
   delay,
-  className 
+  className,
+  onRequest,
+  onViewDetails
 }: ListingCardProps) {
   return (
     <Card className={cn("shadow-md", className, fadeUp(delay))}>
@@ -64,10 +68,21 @@ export function ListingCard({
           </div>
         )}
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Button variant="outline" className="w-full">
-          <ShoppingBag className="w-4 h-4 mr-2" />
+      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={onViewDetails}
+        >
+          <Eye className="w-4 h-4 mr-2" />
           View Details
+        </Button>
+        <Button 
+          className="w-full"
+          onClick={onRequest}
+        >
+          <ShoppingBag className="w-4 h-4 mr-2" />
+          Request Purchase
         </Button>
       </CardFooter>
     </Card>
