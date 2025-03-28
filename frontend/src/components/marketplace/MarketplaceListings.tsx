@@ -1,9 +1,18 @@
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { SortDesc } from "lucide-react";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+
 
 interface Listing {
-  id: string;
+  _id: string;  // Changed from id to _id to match MongoDB
   title: string;
   description: string;
   image: string;
@@ -11,10 +20,10 @@ interface Listing {
   grade: string;
   location: string;
   category: string;
-  seller?: {
+  sellerId?: {
+    _id: string;
     firstName: string;
     lastName: string;
-    email: string;
   };
   timeLeft: string;
 }
@@ -24,6 +33,56 @@ interface MarketplaceListingsProps {
 }
 
 export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps) {
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [isRequestOpen, setIsRequestOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  const handleRequestPurchase = async () => {
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/auth/login");
+        return;
+      }
+
+      if (!selectedListing) {
+        throw new Error("No listing selected");
+      }
+
+      const response = await fetch("http://localhost:5000/api/requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          listingId: selectedListing._id  // Changed from id to _id
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Request failed");
+      }
+
+      alert("Request submitted successfully!");
+      setIsRequestOpen(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit request";
+      alert(errorMessage);
+      console.error("Request error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleViewDetails = (listingId: string) => {
+    navigate(`/listings/${listingId}`);
+  };
+
   return (
     <div className="lg:w-3/4">
       <div className="flex justify-between items-center mb-6">
@@ -40,14 +99,19 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.map((listing, index) => (
           <ListingCard 
-            key={listing.id} 
+            key={listing._id} 
             {...listing} 
+            id={listing._id}
             delay={(index + 1) * 100 % 600}
+            onRequest={() => {
+              setSelectedListing(listing);
+              setIsRequestOpen(true);
+            }}
+            onViewDetails={() => handleViewDetails(listing._id)}
           />
         ))}
       </div>
       
-      {/* Pagination */}
       <div className="mt-12 flex justify-center">
         <div className="flex space-x-1">
           <Button variant="outline" size="sm" disabled>Previous</Button>
@@ -57,6 +121,50 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
           <Button variant="outline" size="sm">Next</Button>
         </div>
       </div>
+
+      <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Purchase Request</DialogTitle>
+          </DialogHeader>
+          {selectedListing && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <img
+                  src={selectedListing.image}
+                  alt={selectedListing.title}
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
+                <div>
+                  <h4 className="font-semibold">{selectedListing.title}</h4>
+                  <p className="text-gray-600">${selectedListing.price}</p>
+                  <p className="text-sm text-gray-500">{selectedListing.category}</p>
+                  {selectedListing.sellerId && (
+                    <p className="text-sm text-gray-500">
+                      Seller: {selectedListing.sellerId.firstName} {selectedListing.sellerId.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-4 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsRequestOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleRequestPurchase}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Confirm Request"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
