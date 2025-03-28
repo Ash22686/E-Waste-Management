@@ -11,10 +11,7 @@ export default function SellerDashboard() {
   const [editListing, setEditListing] = useState(null);
   const [myListings, setMyListings] = useState([]);
   const [newListing, setNewListing] = useState({
-    title: "",
-    description: "",
     price: "",
-    grade: "",
     location: "",
     category: "",
     timeLeft: "",
@@ -61,10 +58,7 @@ export default function SellerDashboard() {
     setIsAddListingOpen(!isAddListingOpen);
     if (!isAddListingOpen) {
       setNewListing({
-        title: "",
-        description: "",
         price: "",
-        grade: "",
         location: "",
         category: "",
         timeLeft: "",
@@ -75,13 +69,7 @@ export default function SellerDashboard() {
     }
   };
 
-  // Handle text input changes for add listing
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewListing((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle single image file selection for add listing
+  // Handle image file selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files[0];
     if (file && file.size <= 10 * 1024 * 1024) {
@@ -92,7 +80,7 @@ export default function SellerDashboard() {
     }
   };
 
-  // Drag-and-drop event handlers for add listing
+  // Drag-and-drop event handlers
   const handleDragOver = (e) => e.preventDefault();
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -114,7 +102,7 @@ export default function SellerDashboard() {
     }
   };
 
-  // Submit new listing with separate image upload
+  // Submit new listing with image upload and Gemini grading
   const handleAddListingSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -122,40 +110,38 @@ export default function SellerDashboard() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      let imageUrl = null;
-
-      if (newListing.image) {
-        const formData = new FormData();
-        formData.append("image", newListing.image);
-
-        const uploadResponse = await fetch("http://localhost:5000/api/uploads/upload", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        const uploadData = await uploadResponse.json();
-        if (!uploadData.success) {
-          throw new Error(uploadData.message || "Image upload failed");
-        }
-
-        imageUrl = uploadData.url;
+      if (!newListing.image) {
+        throw new Error("Please upload an image");
       }
 
+      // Upload image and get Gemini grading
+      const formData = new FormData();
+      formData.append("image", newListing.image);
+
+      const uploadResponse = await fetch("http://localhost:5000/api/uploads/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+      if (!uploadData.success) {
+        throw new Error(uploadData.message || "Image upload failed");
+      }
+
+      // Create listing data with all fields
       const listingData = new FormData();
-      listingData.append("title", newListing.title);
-      listingData.append("description", newListing.description);
+      listingData.append("title", uploadData.item || "Unknown Item");
+      listingData.append("description", uploadData.description || "No description available");
       listingData.append("price", newListing.price.toString());
-      listingData.append("grade", newListing.grade);
+      listingData.append("grade", uploadData.grade || "Not graded");
       listingData.append("location", newListing.location);
       listingData.append("category", newListing.category);
       listingData.append("timeLeft", newListing.timeLeft);
       listingData.append("estimatedWeight", newListing.estimatedWeight.toString());
-      if (imageUrl) {
-        listingData.append("image", imageUrl);
-      }
+      listingData.append("image", uploadData.url);
 
       await createListing(listingData, token);
 
@@ -165,7 +151,7 @@ export default function SellerDashboard() {
       alert("Listing added successfully!");
     } catch (submitError) {
       console.error("Error adding listing:", submitError);
-      setError("Failed to add listing. Please try again.");
+      setError(submitError.message || "Failed to add listing. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -198,30 +184,24 @@ export default function SellerDashboard() {
     setError(null);
   };
 
-  // Handle text input changes for edit listing
-  const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditListing((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle single image file selection for edit listing
+  // Handle edit image change
   const handleEditImageChange = (e) => {
     const file = e.target.files[0];
     if (file && file.size <= 10 * 1024 * 1024) {
-      setEditListing((prev) => ({ ...prev, image: file }));
+      setEditListing((prev) => ({ ...prev, newImage: file }));
       setError(null);
     } else {
       setError("Image size exceeds 10MB.");
     }
   };
 
-  // Drag-and-drop event handlers for edit listing
+  // Handle edit drop
   const handleEditDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file && file.size <= 10 * 1024 * 1024) {
-      setEditListing((prev) => ({ ...prev, image: file }));
+      setEditListing((prev) => ({ ...prev, newImage: file }));
       setError(null);
     } else {
       setError("Image size exceeds 10MB.");
@@ -235,14 +215,13 @@ export default function SellerDashboard() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-  
-      let imageUrl = editListing.image; // Retain the existing image URL
-  
-      // Upload the image if a new one is selected
+
+      let imageUrl = editListing.image;
+
       if (editListing.newImage) {
         const formData = new FormData();
         formData.append("image", editListing.newImage);
-  
+
         const uploadResponse = await fetch("http://localhost:5000/api/uploads/upload", {
           method: "POST",
           headers: {
@@ -250,21 +229,27 @@ export default function SellerDashboard() {
           },
           body: formData,
         });
-  
+
         const uploadData = await uploadResponse.json();
         if (!uploadData.success) {
           throw new Error(uploadData.message || "Image upload failed");
         }
-  
-        imageUrl = uploadData.url; // Get the new image URL from the response
+
+        imageUrl = uploadData.url;
+        setEditListing((prev) => ({
+          ...prev,
+          title: uploadData.item || prev.title,
+          description: uploadData.description || prev.description,
+          grade: uploadData.grade || prev.grade,
+          image: uploadData.url,
+        }));
       }
-  
-      // Update the listing with the image URL
+
       const listingData = {
         ...editListing,
-        image: imageUrl, // Use the existing or new image URL
+        image: imageUrl,
       };
-  
+
       await updateListing(editListing._id, listingData, token);
       const listingsResponse = await getSellerListings(token);
       setMyListings(listingsResponse?.data || []);
@@ -345,6 +330,12 @@ export default function SellerDashboard() {
                           Listing
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Grade
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Category
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -374,6 +365,12 @@ export default function SellerDashboard() {
                                 <div className="text-sm font-medium text-gray-900">{listing.title}</div>
                               </div>
                             </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {listing.description || "No description available"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {listing.grade || "Not graded"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {listing.category}
@@ -424,34 +421,6 @@ export default function SellerDashboard() {
               <form onSubmit={handleAddListingSubmit}>
                 <div className="space-y-2">
                   <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      name="title"
-                      value={newListing.title}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={newListing.description}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      rows={3}
-                      required
-                    />
-                  </div>
-                  <div>
                     <label htmlFor="price" className="block text-sm font-medium text-gray-700">
                       Price ($)
                     </label>
@@ -460,23 +429,9 @@ export default function SellerDashboard() {
                       id="price"
                       name="price"
                       value={newListing.price}
-                      onChange={handleInputChange}
+                      onChange={(e) => setNewListing(prev => ({ ...prev, price: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       step="0.01"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="grade" className="block text-sm font-medium text-gray-700">
-                      Grade
-                    </label>
-                    <input
-                      type="text"
-                      id="grade"
-                      name="grade"
-                      value={newListing.grade}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
                   </div>
@@ -489,7 +444,7 @@ export default function SellerDashboard() {
                       id="location"
                       name="location"
                       value={newListing.location}
-                      onChange={handleInputChange}
+                      onChange={(e) => setNewListing(prev => ({ ...prev, location: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -503,7 +458,7 @@ export default function SellerDashboard() {
                       id="category"
                       name="category"
                       value={newListing.category}
-                      onChange={handleInputChange}
+                      onChange={(e) => setNewListing(prev => ({ ...prev, category: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -517,7 +472,7 @@ export default function SellerDashboard() {
                       id="timeLeft"
                       name="timeLeft"
                       value={newListing.timeLeft}
-                      onChange={handleInputChange}
+                      onChange={(e) => setNewListing(prev => ({ ...prev, timeLeft: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -531,7 +486,7 @@ export default function SellerDashboard() {
                       id="estimatedWeight"
                       name="estimatedWeight"
                       value={newListing.estimatedWeight}
-                      onChange={handleInputChange}
+                      onChange={(e) => setNewListing(prev => ({ ...prev, estimatedWeight: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       step="0.01"
                       required
@@ -640,7 +595,7 @@ export default function SellerDashboard() {
                       id="title"
                       name="title"
                       value={editListing.title}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, title: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -653,7 +608,7 @@ export default function SellerDashboard() {
                       id="description"
                       name="description"
                       value={editListing.description}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, description: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       rows={3}
                       required
@@ -668,7 +623,7 @@ export default function SellerDashboard() {
                       id="price"
                       name="price"
                       value={editListing.price}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, price: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       step="0.01"
                       required
@@ -683,7 +638,7 @@ export default function SellerDashboard() {
                       id="grade"
                       name="grade"
                       value={editListing.grade}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, grade: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -697,7 +652,7 @@ export default function SellerDashboard() {
                       id="location"
                       name="location"
                       value={editListing.location}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, location: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -711,7 +666,7 @@ export default function SellerDashboard() {
                       id="category"
                       name="category"
                       value={editListing.category}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, category: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -725,7 +680,7 @@ export default function SellerDashboard() {
                       id="timeLeft"
                       name="timeLeft"
                       value={editListing.timeLeft}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, timeLeft: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -739,7 +694,7 @@ export default function SellerDashboard() {
                       id="estimatedWeight"
                       name="estimatedWeight"
                       value={editListing.estimatedWeight}
-                      onChange={handleEditInputChange}
+                      onChange={(e) => setEditListing(prev => ({ ...prev, estimatedWeight: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       step="0.01"
                       required
@@ -793,8 +748,8 @@ export default function SellerDashboard() {
                           <p className="pl-1">or drag and drop</p>
                         </div>
                         <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                        {editListing.image instanceof File && (
-                          <p className="text-xs text-gray-700 mt-1">{editListing.image.name}</p>
+                        {editListing.newImage && (
+                          <p className="text-xs text-gray-700 mt-1">{editListing.newImage.name}</p>
                         )}
                       </div>
                     </div>
