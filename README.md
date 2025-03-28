@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # E-Waste Exchange Platform
 
 A full-stack application for trading and recycling electronic waste, promoting sustainability and the circular economy.
@@ -104,6 +103,3 @@ The frontend development server will run on port 8080 and proxy API requests to 
 - Bcrypt
 
 ## License
-=======
-# GDG-Main-Project
->>>>>>> ec1c7411905db7458c0cfe2caf16d2d3647db9a1
