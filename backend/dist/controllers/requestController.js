@@ -69,7 +69,7 @@ const getBuyerRequests = (req, res) => __awaiter(void 0, void 0, void 0, functio
             }
         })
             .lean(); // Convert to plain JS object
-        console.log('DEBUG - Populated requests:', requests); // Add this for verification
+        
         res.status(200).json({ success: true, data: requests });
     }
     catch (error) {

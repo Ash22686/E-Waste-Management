@@ -62,7 +62,6 @@ export const getBuyerRequests = async (req: AuthRequest, res: Response) => {
       })
       .lean(); // Convert to plain JS object
 
-    console.log('DEBUG - Populated requests:', requests); // Add this for verification
     res.status(200).json({ success: true, data: requests });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

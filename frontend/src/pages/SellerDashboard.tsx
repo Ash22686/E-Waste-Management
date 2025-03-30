@@ -12,17 +12,22 @@ export default function SellerDashboard() {
   const [editListing, setEditListing] = useState(null);
   const [myListings, setMyListings] = useState([]);
   const [newListing, setNewListing] = useState({
+    title: "",
     price: "",
     location: "",
     category: "",
     timeLeft: "",
     estimatedWeight: "",
+    grade: "", // Added grade property
     image: null,
+    description: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("myListings");
   const [isDragging, setIsDragging] = useState(false);
+  // Added isReviewing state variable
+  const [isReviewing, setIsReviewing] = useState(false);
   const navigate = useNavigate();
 
   // Fetch user data and listings on mount
@@ -59,19 +64,23 @@ export default function SellerDashboard() {
     setIsAddListingOpen(!isAddListingOpen);
     if (!isAddListingOpen) {
       setNewListing({
-        price: "",
-        location: "",
-        category: "",
-        timeLeft: "",
-        estimatedWeight: "",
-        image: null,
-      });
+              title: "",
+              price: "",
+              location: "",
+              category: "",
+              timeLeft: "",
+              estimatedWeight: "",
+              grade: "", // Ensure grade is included
+              image: null,
+              description: "",
+            });
+      setIsReviewing(false); // Reset review step
       setError(null);
     }
   };
 
   // Handle image file selection
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file && file.size <= 10 * 1024 * 1024) {
       setNewListing((prev) => ({ ...prev, image: file }));
@@ -107,6 +116,7 @@ export default function SellerDashboard() {
   const handleAddListingSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -115,7 +125,6 @@ export default function SellerDashboard() {
         throw new Error("Please upload an image");
       }
 
-      // Upload image and get Gemini grading
       const formData = new FormData();
       formData.append("image", newListing.image);
 
@@ -132,27 +141,63 @@ export default function SellerDashboard() {
         throw new Error(uploadData.message || "Image upload failed");
       }
 
-      // Create listing data with all fields
-      const listingData = new FormData();
-      listingData.append("title", uploadData.item || "Unknown Item");
-      listingData.append("description", uploadData.description || "No description available");
-      listingData.append("price", newListing.price.toString());
-      listingData.append("grade", uploadData.grade || "Not graded");
-      listingData.append("location", newListing.location);
-      listingData.append("category", newListing.category);
-      listingData.append("timeLeft", newListing.timeLeft);
-      listingData.append("estimatedWeight", newListing.estimatedWeight.toString());
-      listingData.append("image", uploadData.url);
+      setNewListing((prev) => ({
+        ...prev,
+        title: uploadData.item || "Unknown Item",
+        description: uploadData.description || "No description available",
+        grade: uploadData.grade || "Not graded",
+        image: uploadData.url,
+      }));
 
-      await createListing(listingData, token);
+      setIsReviewing(true);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      setError(error.message || "Failed to upload image. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmListing = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+
+      const listingData = {
+        title: newListing.title,
+        description: newListing.description,
+        grade: newListing.grade,
+        price: newListing.price,
+        location: newListing.location,
+        category: newListing.category,
+        timeLeft: newListing.timeLeft,
+        estimatedWeight: newListing.estimatedWeight,
+        image: newListing.image,
+      };
+
+      const formData = new FormData();
+      formData.append("title", listingData.title);
+      formData.append("description", listingData.description);
+      formData.append("grade", listingData.grade);
+      formData.append("price", listingData.price);
+      formData.append("location", listingData.location);
+      formData.append("category", listingData.category);
+      formData.append("timeLeft", listingData.timeLeft);
+      formData.append("estimatedWeight", listingData.estimatedWeight);
+      formData.append("image", listingData.image);
+
+      await createListing(formData, token);
 
       const listingsResponse = await getSellerListings(token);
       setMyListings(listingsResponse?.data || []);
       setIsAddListingOpen(false);
       alert("Listing added successfully!");
-    } catch (submitError) {
-      console.error("Error adding listing:", submitError);
-      setError(submitError.message || "Failed to add listing. Please try again.");
+    } catch (error) {
+      console.error("Error adding listing:", error);
+      setError("Failed to add listing. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -267,7 +312,7 @@ export default function SellerDashboard() {
   // Loading UI
   if (loading && !isAddListingOpen && !isEditListingOpen) {
     return (
-      <div className="min-h-screen bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center">
+      <div className="min-h-screen py-20 bg-gradient-to-br from-green-50 to-gray-50 flex items-center justify-center">
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <div className="animate-pulse flex flex-col items-center">
             <div className="h-8 w-48 bg-gray-200 rounded mb-4"></div>
@@ -279,9 +324,9 @@ export default function SellerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-green-500 to-blue-500">
+    <div className="min-h-screen py-20 bg-gradient-to-br from-green-50 to-gray-50">
       <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-8">
+      <div className="container mx-auto px-4 pb-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow">
           <h1 className="text-3xl font-bold text-gray-800">Seller Dashboard</h1>
@@ -314,20 +359,16 @@ export default function SellerDashboard() {
               >
                 My Listings
               </button>
-
-              {/* Requests Tab Button */}
               <button
-                        className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
-                        activeTab === "requests"
-                            ? "border-blue-500 text-blue-600" // Different color
-                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}
-                        onClick={() => setActiveTab("requests")}
-                        // ... other attributes
-                    >
-                        Requests {/* Label */}
-                    </button>
-
+                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "requests"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+                onClick={() => setActiveTab("requests")}
+              >
+                Requests
+              </button>
             </nav>
           </div>
 
@@ -419,15 +460,11 @@ export default function SellerDashboard() {
             </div>
           )}
 
-{activeTab === "requests" && (
-                    <div>
-
-                       
-                        <SellerRequests />
-                        
-
-                    </div>
-                )}
+          {activeTab === "requests" && (
+            <div>
+              <SellerRequests />
+            </div>
+          )}
         </div>
 
         {/* Add Listing Modal */}
@@ -443,149 +480,178 @@ export default function SellerDashboard() {
                 </button>
               </div>
               {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-              <form onSubmit={handleAddListingSubmit}>
-                <div className="space-y-2">
-                  <div>
-                    <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                      Price ($)
-                    </label>
-                    <input
-                      type="number"
-                      id="price"
-                      name="price"
-                      value={newListing.price}
-                      onChange={(e) => setNewListing(prev => ({ ...prev, price: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      id="location"
-                      name="location"
-                      value={newListing.location}
-                      onChange={(e) => setNewListing(prev => ({ ...prev, location: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                      Category
-                    </label>
-                    <input
-                      type="text"
-                      id="category"
-                      name="category"
-                      value={newListing.category}
-                      onChange={(e) => setNewListing(prev => ({ ...prev, category: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="timeLeft" className="block text-sm font-medium text-gray-700">
-                      Time Left
-                    </label>
-                    <input
-                      type="text"
-                      id="timeLeft"
-                      name="timeLeft"
-                      value={newListing.timeLeft}
-                      onChange={(e) => setNewListing(prev => ({ ...prev, timeLeft: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
-                      Estimated Weight (kg)
-                    </label>
-                    <input
-                      type="number"
-                      id="estimatedWeight"
-                      name="estimatedWeight"
-                      value={newListing.estimatedWeight}
-                      onChange={(e) => setNewListing(prev => ({ ...prev, estimatedWeight: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Listing Image (Max 10MB)
-                    </label>
-                    <div
-                      className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${
-                        isDragging ? "border-green-500 bg-green-50" : "border-gray-300"
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDragEnter={handleDragEnter}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                    >
-                      <div className="space-y-1 text-center">
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="file-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
-                          >
-                            <span>Upload image</span>
-                            <input
-                              id="file-upload"
-                              name="file-upload"
-                              type="file"
-                              className="sr-only"
-                              onChange={handleImageChange}
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                        {newListing.image && (
-                          <p className="text-xs text-gray-700 mt-1">{newListing.image.name}</p>
-                        )}
-                      </div>
+
+              {!isReviewing ? (
+                <form onSubmit={handleAddListingSubmit}>
+                  <div className="space-y-2">
+                    <div>
+                      <label htmlFor="image" className="block text-sm font-medium text-gray-700">
+                        Listing Image (Max 10MB)
+                      </label>
+                      <input
+                        type="file"
+                        id="image"
+                        name="image"
+                        onChange={handleImageChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
                     </div>
                   </div>
-                </div>
-                <div className="mt-4 flex justify-end space-x-4">
-                  <button
-                    type="button"
-                    onClick={toggleAddListing}
-                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"
-                    disabled={loading}
-                  >
-                    {loading ? "Adding..." : "Add Listing"}
-                  </button>
-                </div>
-              </form>
+                  <div className="mt-4 flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={toggleAddListing}
+                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"
+                      disabled={loading}
+                    >
+                      {loading ? "Uploading..." : "Upload Image"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                // Updated review form with all fields
+                <form onSubmit={handleConfirmListing}>
+                  <div className="space-y-2">
+                    <div>
+                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        value={newListing.title}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, title: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        Description
+                      </label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        value={newListing.description}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, description: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        rows={3}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="grade" className="block text-sm font-medium text-gray-700">
+                        Grade
+                      </label>
+                      <input
+                        type="text"
+                        id="grade"
+                        name="grade"
+                        value={newListing.grade}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, grade: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                        Price ($)
+                      </label>
+                      <input
+                        type="number"
+                        id="price"
+                        name="price"
+                        value={newListing.price}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, price: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+                        Location
+                      </label>
+                      <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value={newListing.location}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, location: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                        Category
+                      </label>
+                      <input
+                        type="text"
+                        id="category"
+                        name="category"
+                        value={newListing.category}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, category: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="timeLeft" className="block text-sm font-medium text-gray-700">
+                        Time Left
+                      </label>
+                      <input
+                        type="text"
+                        id="timeLeft"
+                        name="timeLeft"
+                        value={newListing.timeLeft}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, timeLeft: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
+                        Estimated Weight (kg)
+                      </label>
+                      <input
+                        type="number"
+                        id="estimatedWeight"
+                        name="estimatedWeight"
+                        value={newListing.estimatedWeight}
+                        onChange={(e) => setNewListing((prev) => ({ ...prev, estimatedWeight: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={toggleAddListing}
+                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"
+                      disabled={loading}
+                    >
+                      {loading ? "Adding..." : "Add Listing"}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}
@@ -620,7 +686,7 @@ export default function SellerDashboard() {
                       id="title"
                       name="title"
                       value={editListing.title}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, title: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, title: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -633,7 +699,7 @@ export default function SellerDashboard() {
                       id="description"
                       name="description"
                       value={editListing.description}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, description: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, description: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       rows={3}
                       required
@@ -648,7 +714,7 @@ export default function SellerDashboard() {
                       id="price"
                       name="price"
                       value={editListing.price}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, price: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, price: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       step="0.01"
                       required
@@ -663,7 +729,7 @@ export default function SellerDashboard() {
                       id="grade"
                       name="grade"
                       value={editListing.grade}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, grade: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, grade: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -677,7 +743,7 @@ export default function SellerDashboard() {
                       id="location"
                       name="location"
                       value={editListing.location}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, location: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, location: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -691,7 +757,7 @@ export default function SellerDashboard() {
                       id="category"
                       name="category"
                       value={editListing.category}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, category: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, category: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -705,7 +771,7 @@ export default function SellerDashboard() {
                       id="timeLeft"
                       name="timeLeft"
                       value={editListing.timeLeft}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, timeLeft: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, timeLeft: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
@@ -719,7 +785,7 @@ export default function SellerDashboard() {
                       id="estimatedWeight"
                       name="estimatedWeight"
                       value={editListing.estimatedWeight}
-                      onChange={(e) => setEditListing(prev => ({ ...prev, estimatedWeight: e.target.value }))}
+                      onChange={(e) => setEditListing((prev) => ({ ...prev, estimatedWeight: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
                       step="0.01"
                       required
@@ -807,3 +873,5 @@ export default function SellerDashboard() {
     </div>
   );
 }
+
+// Removed erroneous setIsReviewing function
