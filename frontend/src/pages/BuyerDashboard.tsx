@@ -95,7 +95,7 @@ export default function BuyerDashboard() {
         return;
       }
     try {
-      const response = await fetch(`http://localhost:5000/api/requests/${requestId}/status`, {
+      const response = await fetch(`http://localhost:5000/api/requests/${requestId}/cancel`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -124,6 +124,29 @@ export default function BuyerDashboard() {
       alert("An error occurred while trying to cancel the request.");
     }
   };
+
+  // Add this remove handler
+const handleRemoveRequest = async (requestId: string) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:5000/api/requests/${requestId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      setRequests(prev => prev.filter(req => req._id !== requestId));
+      alert("Request removed successfully");
+    } else {
+      alert(data.message || "Failed to remove request");
+    }
+  } catch (error) {
+    alert("Failed to remove request");
+  }
+};
 
   // --- Loading and User Check ---
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -259,7 +282,7 @@ export default function BuyerDashboard() {
                            <Badge variant={
                               request.status === 'pending' ? 'secondary' :
                               request.status === 'accepted' ? 'default' : // Use 'default' (often green/blue) for accepted
-                              request.status === 'completed' ? 'success' : // Assuming you have a 'success' variant (e.g., green)
+                              request.status === 'completed' ? 'default' : // Use 'default' for completed status
                               request.status === 'rejected' || request.status === 'cancelled' ? 'destructive' : // Use 'destructive' (red)
                               'outline' // Fallback
                            } className="capitalize"> {/* Capitalize first letter */}
@@ -267,20 +290,26 @@ export default function BuyerDashboard() {
                            </Badge>
                         </td>
                         {/* Actions */}
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                          {request.status === 'pending' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCancelRequest(request._id)}
-                              className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-                            >
-                              Cancel Request
-                            </Button>
-                          )}
-                          
-                           
-                        </td>
+                      <td className="px-6 py-4">
+                        {request.status === 'pending' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelRequest(request._id)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                        {request.status === 'cancelled' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveRequest(request._id)}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </td>
                       </tr>
                     ))}
                   </tbody>

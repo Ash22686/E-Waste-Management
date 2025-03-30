@@ -4,7 +4,8 @@ import {
   getBuyerRequests,
   updateRequestStatus,
   cancelRequest, // Make sure cancelRequest is imported if needed elsewhere
-  getSellerRequests // Import the new controller function
+  getSellerRequests,
+  deleteRequest 
 } from '../controllers/requestController';
 import { protect, restrictTo } from '../middleware/authMiddleware';
 
@@ -46,6 +47,12 @@ router.patch(
     '/:id/cancel', // Example: Use a dedicated path for cancellation
     restrictTo('buyer') as RequestHandler,
     cancelRequest as RequestHandler // Assuming cancelRequest logic is correct for buyers
+);
+
+router.delete(
+  '/:id',
+  restrictTo('buyer'),
+  deleteRequest as RequestHandler // Ensure this is the correct function for deleting requests
 );
 // Consider if sellers should be able to cancel too under certain conditions? If so, add another route or modify logic.
 
