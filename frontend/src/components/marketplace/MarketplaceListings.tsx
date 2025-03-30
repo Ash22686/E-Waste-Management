@@ -20,10 +20,11 @@ interface Listing {
   grade: string;
   location: string;
   category: string;
-  sellerId?: {
+  seller?: {
     _id: string;
     firstName: string;
     lastName: string;
+    email: string;
   };
   timeLeft: string;
 }
@@ -139,9 +140,9 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
                   <h4 className="font-semibold">{selectedListing.title}</h4>
                   <p className="text-gray-600">${selectedListing.price}</p>
                   <p className="text-sm text-gray-500">{selectedListing.category}</p>
-                  {selectedListing.sellerId && (
+                  {selectedListing.seller && (
                     <p className="text-sm text-gray-500">
-                      Seller: {selectedListing.sellerId.firstName} {selectedListing.sellerId.lastName}
+                      Seller: {selectedListing.seller.firstName} {selectedListing.seller.lastName}
                     </p>
                   )}
                 </div>
