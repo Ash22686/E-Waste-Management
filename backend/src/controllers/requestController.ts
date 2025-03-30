@@ -167,3 +167,30 @@ export const cancelRequest = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Add this new controller function
+export const deleteRequest = async (req: AuthRequest, res: Response) => {
+  try {
+    const deletedRequest = await RequestModel.findOneAndDelete({
+      _id: req.params.id,
+      buyer: req.user!._id,
+      status: 'cancelled' // Only allow deleting cancelled requests
+    });
+
+    if (!deletedRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cancelled request not found or already removed'
+      });
+    }
+
+    res.status(200).json({ 
+      success: true,
+      message: 'Request removed successfully'
+    });
+  } catch (error: any) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
