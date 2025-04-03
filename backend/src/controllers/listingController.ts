@@ -1,12 +1,17 @@
 import { Response } from 'express';
 import { AuthRequest as Request } from '../types';
 import * as listingService from '../services/listingService';
-import Listing from '../models/Listing';
+import Listing from '../models/Listing'; // Import the model directly for update
 
 // Get all listings
 export const getAllListings = async (req: Request, res: Response): Promise<void> => {
   try {
-    const listings = await listingService.getAllListings();
+    // Optional: Add filtering here if you want the API endpoint itself
+    // to only return non-scrap items by default.
+    // const query = { isScrapItem: false }; // Example server-side filter
+    // const listings = await listingService.getAllListings(query);
+    const listings = await listingService.getAllListings(); // Keep as is if frontend handles filtering
+
     res.status(200).json({
       success: true,
       data: listings,
@@ -53,8 +58,10 @@ export const getSellerListings = async (req: Request, res: Response): Promise<vo
       });
       return;
     }
-
     const sellerId = req.user._id.toString(); // Get the seller's ID from the authenticated user
+
+    // Optional: Add filter if seller dashboard should hide scrap items
+    // const listings = await listingService.getSellerListings(sellerId, { isScrapItem: false });
     const listings = await listingService.getSellerListings(sellerId);
 
     res.status(200).json({
@@ -79,12 +86,12 @@ export const createListing = async (req: Request, res: Response): Promise<void> 
       });
       return;
     }
-
     const sellerId = req.user._id; // Get the seller's ID from the authenticated user
 
     const listingData = {
       ...req.body,
       sellerId, // Add the sellerId to the listing data
+      // isScrapItem will default to false based on the schema
     };
 
     const listing = await listingService.createListing(listingData);
@@ -107,8 +114,9 @@ export const updateListing = async (req: Request, res: Response): Promise<void> 
     const { id } = req.params;
     const updates = req.body;
 
-    // Ensure the sellerId is not overwritten
+    // Ensure the sellerId and isScrapItem are not overwritten via this endpoint
     delete updates.sellerId;
+    delete updates.isScrapItem; // Prevent manual update of scrap status
 
     const updatedListing = await Listing.findByIdAndUpdate(id, updates, {
       new: true,
@@ -137,7 +145,6 @@ export const deleteListing = async (req: Request, res: Response): Promise<void> 
       });
       return;
     }
-
     const { id } = req.params;
     const sellerId = req.user._id.toString();
 
@@ -155,10 +162,14 @@ export const deleteListing = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+// Get featured listings - Also filter out scrap items here potentially
 export const getFeaturedListings = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Fetch the latest 4 listings as featured listings
-    const listings = await Listing.find().sort({ createdAt: -1 }).limit(4).lean();
+    // Fetch the latest 4 non-scrap listings as featured listings
+    const listings = await Listing.find({ isScrapItem: false }) // Filter out scrap items
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean();
 
     res.status(200).json({
       success: true,

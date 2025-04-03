@@ -1,3 +1,5 @@
+// src/components/marketplace/MarketplaceListings.tsx (or wherever it resides)
+
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { SortDesc } from "lucide-react";
@@ -10,9 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 
-
-interface Listing {
-  _id: string;  // Changed from id to _id to match MongoDB
+// --- UPDATE THIS INTERFACE ---
+// Make sure this interface matches the actual data structure
+// you expect from the API and need in the component/parent.
+export interface Listing { // Add 'export' if you want to import it elsewhere
+  _id: string;
   title: string;
   description: string;
   image: string;
@@ -20,19 +24,26 @@ interface Listing {
   grade: string;
   location: string;
   category: string;
+  sellerId: string; // Assuming this comes from the API now
+  estimatedWeight: number; // Add field from backend model
+  isScrapItem: boolean; // Add field for filtering
+  createdAt: string | Date; // Add field from backend model (use string or Date)
+  updatedAt: string | Date; // Add field from backend model (use string or Date)
+  timeLeft: string; // Keep required field
+  // Optional: Keep seller populated details if your API provides them
   seller?: {
     _id: string;
     firstName: string;
     lastName: string;
-    email: string;
+    email?: string; // Make optional if not always present
   };
-  timeLeft: string;
 }
 
 interface MarketplaceListingsProps {
-  listings: Listing[];
+  listings: Listing[]; // Uses the updated interface
 }
 
+// No changes needed in the component logic itself for this fix
 export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps) {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
@@ -56,10 +67,10 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          listingId: selectedListing._id  // Changed from id to _id
+          listingId: selectedListing._id,
         }),
       });
 
@@ -72,7 +83,8 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
       alert("Request submitted successfully!");
       setIsRequestOpen(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to submit request";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to submit request";
       alert(errorMessage);
       console.error("Request error:", error);
     } finally {
@@ -96,14 +108,14 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
           </Button>
         </div>
       </div>
-      
+
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.map((listing, index) => (
-          <ListingCard 
-            key={listing._id} 
-            {...listing} 
-            id={listing._id}
-            delay={(index + 1) * 100 % 600}
+          <ListingCard
+            key={listing._id}
+            {...listing}
+            id={listing._id} // Pass id prop if ListingCard expects it specifically
+            delay={((index + 1) * 100) % 600}
             onRequest={() => {
               setSelectedListing(listing);
               setIsRequestOpen(true);
@@ -112,17 +124,19 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
           />
         ))}
       </div>
-      
-      <div className="mt-12 flex justify-center">
-        <div className="flex space-x-1">
-          <Button variant="outline" size="sm" disabled>Previous</Button>
-          <Button variant="outline" size="sm" className="bg-eco-50 border-eco-200">1</Button>
-          <Button variant="outline" size="sm">2</Button>
-          <Button variant="outline" size="sm">3</Button>
-          <Button variant="outline" size="sm">Next</Button>
-        </div>
-      </div>
 
+      {/* --- Pagination (Keep as is) --- */}
+      <div className="mt-12 flex justify-center">
+         <div className="flex space-x-1">
+           <Button variant="outline" size="sm" disabled>Previous</Button>
+           <Button variant="outline" size="sm" className="bg-eco-50 border-eco-200">1</Button>
+           <Button variant="outline" size="sm">2</Button>
+           <Button variant="outline" size="sm">3</Button>
+           <Button variant="outline" size="sm">Next</Button>
+         </div>
+       </div>
+
+      {/* --- Dialog (Keep as is, but ensure selectedListing fields are accessed correctly) --- */}
       <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
         <DialogContent>
           <DialogHeader>
@@ -138,27 +152,26 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
                 />
                 <div>
                   <h4 className="font-semibold">{selectedListing.title}</h4>
-                  <p className="text-gray-600">${selectedListing.price}</p>
+                  {/* Use toLocaleString for better currency formatting */}
+                  <p className="text-gray-600">${selectedListing.price.toLocaleString()}</p>
                   <p className="text-sm text-gray-500">{selectedListing.category}</p>
-                  {selectedListing.seller && (
-                    <p className="text-sm text-gray-500">
-                      Seller: {selectedListing.seller.firstName} {selectedListing.seller.lastName}
-                    </p>
-                  )}
+                   {/* Safely access seller details */}
+                   {selectedListing.seller && (
+                     <p className="text-sm text-gray-500">
+                       Seller: {selectedListing.seller.firstName} {selectedListing.seller.lastName}
+                     </p>
+                   )}
                 </div>
               </div>
               <div className="flex justify-end gap-4 mt-6">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setIsRequestOpen(false)}
                   disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handleRequestPurchase}
-                  disabled={isSubmitting}
-                >
+                <Button onClick={handleRequestPurchase} disabled={isSubmitting}>
                   {isSubmitting ? "Submitting..." : "Confirm Request"}
                 </Button>
               </div>

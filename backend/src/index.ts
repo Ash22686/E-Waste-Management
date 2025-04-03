@@ -9,12 +9,13 @@ import uploadRoutes from "./routes/uploadRoutes";
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import dotenv from 'dotenv';
 import requestRoutes from './routes/requestRoutes';
+import { scheduleScrapUpdateJob } from './services/scheduleScrapUpdate';
 
 dotenv.config();
 
 // Connect to MongoDB
 connectDB();
-
+scheduleScrapUpdateJob();
 const app = express();
 
 // Middleware

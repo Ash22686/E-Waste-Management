@@ -604,20 +604,7 @@ export default function SellerDashboard() {
                         required
                       />
                     </div>
-                    <div>
-                      <label htmlFor="timeLeft" className="block text-sm font-medium text-gray-700">
-                        Time Left
-                      </label>
-                      <input
-                        type="text"
-                        id="timeLeft"
-                        name="timeLeft"
-                        value={newListing.timeLeft}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, timeLeft: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        required
-                      />
-                    </div>
+                    
                     <div>
                       <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
                         Estimated Weight (kg)
@@ -762,20 +749,7 @@ export default function SellerDashboard() {
                       required
                     />
                   </div>
-                  <div>
-                    <label htmlFor="timeLeft" className="block text-sm font-medium text-gray-700">
-                      Time Left
-                    </label>
-                    <input
-                      type="text"
-                      id="timeLeft"
-                      name="timeLeft"
-                      value={editListing.timeLeft}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, timeLeft: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
+                  
                   <div>
                     <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
                       Estimated Weight (kg)
@@ -874,4 +848,3 @@ export default function SellerDashboard() {
   );
 }
 
-// Removed erroneous setIsReviewing function
