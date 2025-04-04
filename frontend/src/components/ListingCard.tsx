@@ -14,6 +14,7 @@ interface ListingCardProps {
   grade: string;
   location: string;
   category: string;
+  isScrapItem: boolean; 
   seller?: {
     firstName: string;
     lastName: string;
@@ -37,6 +38,7 @@ export function ListingCard({
   category,
   seller,
   timeLeft,
+  isScrapItem,
   delay,
   className,
   onRequest,

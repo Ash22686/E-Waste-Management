@@ -1,16 +1,22 @@
+// src/pages/Marketplace.tsx (or wherever it resides)
+
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { MarketplaceHeader } from "@/components/marketplace/MarketplaceHeader";
 import { MarketplaceFilters } from "@/components/marketplace/MarketplaceFilters";
 import { MarketplaceListings } from "@/components/marketplace/MarketplaceListings";
+// --- IMPORT THE UPDATED TYPE ---
+import { Listing } from "@/components/marketplace/MarketplaceListings"; // Adjust path if needed
 import { MarketplaceMobileFilters } from "@/components/marketplace/MarketplaceMobileFilters";
 import { getAllListings } from "@/services/listingService";
 
+// --- NO NEED for separate ListingData interface ---
 
 export default function Marketplace() {
-  const [listings, setListings] = useState([]);
-  const [filteredListings, setFilteredListings] = useState([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  // --- USE THE IMPORTED Listing TYPE ---
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [filteredListings, setFilteredListings] = useState<Listing[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]); // Adjust max range if needed
   const [selectedGrades, setSelectedGrades] = useState<Record<string, boolean>>({});
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({});
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -19,17 +25,28 @@ export default function Marketplace() {
     const fetchListings = async () => {
       try {
         const response = await getAllListings();
-        setListings(response.data); // Ensure response.data contains the listings array
-        setFilteredListings(response.data);
+        // Explicitly type the API response data if needed, or assume it matches Listing[]
+        const allApiListings: Listing[] = response.data;
+
+        // --- Filter out scrap items ---
+        const activeListings = allApiListings.filter(
+          (listing) => !listing.isScrapItem // Now isScrapItem exists on the Listing type
+        );
+
+        setListings(activeListings); // Store only non-scrap items
+        setFilteredListings(activeListings); // Initialize filtered list
       } catch (error) {
         console.error("Failed to fetch listings:", error);
+        setListings([]);
+        setFilteredListings([]);
       }
     };
 
     fetchListings();
-  }, []);
+  }, []); // Runs once on mount
 
   const applyFilters = () => {
+    // Start with the original list of non-scrap items
     let filtered = listings;
 
     // Filter by price range
@@ -47,30 +64,28 @@ export default function Marketplace() {
       filtered = filtered.filter(listing => selectedCategoryKeys.includes(listing.category));
     }
 
+    // No need to filter isScrapItem here again
     setFilteredListings(filtered);
   };
 
+  // Re-apply filters whenever the base list or filter criteria change
   useEffect(() => {
     applyFilters();
-  }, [priceRange, selectedGrades, selectedCategories]);
+  }, [priceRange, selectedGrades, selectedCategories, listings]); // Include listings
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
-      {/* Header with Search */}
+
       <MarketplaceHeader />
-      
-      {/* Mobile filters toggle */}
-      <MarketplaceMobileFilters 
+
+      <MarketplaceMobileFilters
         isMobileFilterOpen={isMobileFilterOpen}
         setIsMobileFilterOpen={setIsMobileFilterOpen}
       />
-      
-      {/* Main Content */}
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters */}
           <MarketplaceFilters
             priceRange={priceRange}
             setPriceRange={setPriceRange}
@@ -80,8 +95,8 @@ export default function Marketplace() {
             toggleCategory={(category) => setSelectedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
             isMobileFilterOpen={isMobileFilterOpen}
           />
-          
-          {/* Listings */}
+
+          {/* --- Pass filteredListings which now correctly matches Listing[] type --- */}
           <MarketplaceListings listings={filteredListings} />
         </div>
       </div>
