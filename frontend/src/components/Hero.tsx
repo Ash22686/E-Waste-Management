@@ -1,9 +1,29 @@
+import { useEffect, useState } from "react";
 import { GradientButton } from "@/components/GradientButton";
-import { fadeIn, fadeUp } from "@/utils/animations";
+import { fadeUp } from "@/utils/animations";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function Hero() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userType, setUserType] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsAuthenticated(true);
+      const user = localStorage.getItem("user");
+      if (user && user !== "undefined") {
+        try {
+          const parsedUser = JSON.parse(user);
+          setUserType(parsedUser.userType);
+        } catch (error) {
+          console.error("Failed to parse user JSON:", error);
+        }
+      }
+    }
+  }, []);
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-gray-50 to-white pt-32 pb-24 md:pt-40 md:pb-32">
       {/* Background decorative elements */}
@@ -29,11 +49,6 @@ export function Hero() {
           </p>
           
           <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 ${fadeUp(300)}`}>
-            <Link to="/auth/register">
-              <GradientButton size="lg" className="min-w-[180px]">
-                Get Started <ArrowRight className="ml-2 h-4 w-4" />
-              </GradientButton>
-            </Link>
             <Link to="/marketplace">
               <GradientButton 
                 variant="outline" 
@@ -43,6 +58,14 @@ export function Hero() {
                 Browse Marketplace
               </GradientButton>
             </Link>
+
+            {!isAuthenticated && (
+              <Link to="/auth/register">
+                <GradientButton size="lg" className="min-w-[180px]">
+                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                </GradientButton>
+              </Link>
+            )}
           </div>
           
           <div className={`mt-16 flex flex-col md:flex-row items-center justify-center gap-8 ${fadeUp(400)}`}>
