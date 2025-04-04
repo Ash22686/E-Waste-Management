@@ -125,15 +125,8 @@ npm run build
 
 ---
 
-## 📌 Future Improvements
-- Add real-time chat between buyers and sellers
-- Implement AI-based product recommendations
-- Enhance UI/UX with better animations
+
 
 ---
 
-### 🏆 **Contributors**
-- **Your Name** – _Backend & Frontend Developer_
-
-Let me know if you need any changes! 🚀
 
