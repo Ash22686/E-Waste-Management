@@ -16,7 +16,7 @@ export interface IUser extends Document {
   userId: string; // Added userId field
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string;
   password: string;
   userType: "seller" | "buyer";
   address: Address; // Updated address structure

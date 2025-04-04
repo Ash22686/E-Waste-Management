@@ -19,7 +19,7 @@ export interface IUser {
   _id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string;
   password: string;
   userType: "seller" | "buyer";
   address: Address; // Address is now an object

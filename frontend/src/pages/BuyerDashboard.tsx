@@ -50,7 +50,7 @@ export default function BuyerDashboard() {
                 console.error("Unauthorized access. Redirecting to login.");
                 localStorage.removeItem('token');
                 navigate('/auth/login');
-                return;
+                return; 
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }

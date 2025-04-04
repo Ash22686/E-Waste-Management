@@ -1,21 +1,18 @@
-// src/components/marketplace/MarketplaceListings.tsx (or wherever it resides)
+// In MarketplaceListings.tsx
 
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { SortDesc } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-// --- UPDATE THIS INTERFACE ---
-// Make sure this interface matches the actual data structure
-// you expect from the API and need in the component/parent.
-export interface Listing { // Add 'export' if you want to import it elsewhere
+export interface Listing {
   _id: string;
   title: string;
   description: string;
@@ -24,31 +21,68 @@ export interface Listing { // Add 'export' if you want to import it elsewhere
   grade: string;
   location: string;
   category: string;
-  sellerId: string; // Assuming this comes from the API now
-  estimatedWeight: number; // Add field from backend model
-  isScrapItem: boolean; // Add field for filtering
-  createdAt: string | Date; // Add field from backend model (use string or Date)
-  updatedAt: string | Date; // Add field from backend model (use string or Date)
+  sellerId: string;
+  estimatedWeight: number;
+  isScrapItem: boolean;
+  createdAt: string | Date;
+  updatedAt: string | Date;
   timeLeft: string; // Keep required field
-  // Optional: Keep seller populated details if your API provides them
   seller?: {
     _id: string;
     firstName: string;
     lastName: string;
-    email?: string; // Make optional if not always present
+    email?: string;
   };
 }
 
 interface MarketplaceListingsProps {
-  listings: Listing[]; // Uses the updated interface
+  listings: Listing[];
 }
 
-// No changes needed in the component logic itself for this fix
 export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps) {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [buyerRequests, setBuyerRequests] = useState<any[]>([]);
+  // Use filteredListings state to hold the list after applying the search filter.
+  const [filteredListings, setFilteredListings] = useState<Listing[]>(listings);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Fetch buyer requests on mount
+  useEffect(() => {
+    const fetchBuyerRequests = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const response = await fetch("http://localhost:5000/api/requests/buyer", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.data)) {
+            setBuyerRequests(data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch buyer requests", error);
+      }
+    };
+    fetchBuyerRequests();
+  }, []);
+
+  // Update filtered listings based on the search query parameter.
+  useEffect(() => {
+    const searchQuery = searchParams.get("search") || "";
+    if (searchQuery.trim()) {
+      const filtered = listings.filter((listing) =>
+        listing.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredListings(filtered);
+    } else {
+      setFilteredListings(listings);
+    }
+  }, [listings, searchParams]);
 
   const handleRequestPurchase = async () => {
     setIsSubmitting(true);
@@ -81,6 +115,11 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
       }
 
       alert("Request submitted successfully!");
+
+      if (data && data.data) {
+        setBuyerRequests((prev) => [...prev, data.data]);
+      }
+      
       setIsRequestOpen(false);
     } catch (error) {
       const errorMessage =
@@ -99,7 +138,7 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
   return (
     <div className="lg:w-3/4">
       <div className="flex justify-between items-center mb-6">
-        <p className="text-gray-600">Showing {listings.length} results</p>
+        <p className="text-gray-600">Showing {filteredListings.length} results</p>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">Sort by:</span>
           <Button variant="outline" size="sm" className="flex items-center">
@@ -110,33 +149,51 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {listings.map((listing, index) => (
-          <ListingCard
-            key={listing._id}
-            {...listing}
-            id={listing._id} // Pass id prop if ListingCard expects it specifically
-            delay={((index + 1) * 100) % 600}
-            onRequest={() => {
-              setSelectedListing(listing);
-              setIsRequestOpen(true);
-            }}
-            onViewDetails={() => handleViewDetails(listing._id)}
-          />
-        ))}
+        {filteredListings.map((listing, index) => {
+          const alreadyRequested = buyerRequests.some(
+            (request) =>
+              request.listing && request.listing._id === listing._id
+          );
+          return (
+            <ListingCard
+              key={listing._id}
+              {...listing}
+              id={listing._id}
+              delay={((index + 1) * 100) % 600}
+              onRequest={() => {
+                if (alreadyRequested) {
+                  alert("Request already submitted");
+                } else {
+                  setSelectedListing(listing);
+                  setIsRequestOpen(true);
+                }
+              }}
+              onViewDetails={() => handleViewDetails(listing._id)}
+            />
+          );
+        })}
       </div>
 
-      {/* --- Pagination (Keep as is) --- */}
       <div className="mt-12 flex justify-center">
-         <div className="flex space-x-1">
-           <Button variant="outline" size="sm" disabled>Previous</Button>
-           <Button variant="outline" size="sm" className="bg-eco-50 border-eco-200">1</Button>
-           <Button variant="outline" size="sm">2</Button>
-           <Button variant="outline" size="sm">3</Button>
-           <Button variant="outline" size="sm">Next</Button>
-         </div>
-       </div>
+        <div className="flex space-x-1">
+          <Button variant="outline" size="sm" disabled>
+            Previous
+          </Button>
+          <Button variant="outline" size="sm" className="bg-eco-50 border-eco-200">
+            1
+          </Button>
+          <Button variant="outline" size="sm">
+            2
+          </Button>
+          <Button variant="outline" size="sm">
+            3
+          </Button>
+          <Button variant="outline" size="sm">
+            Next
+          </Button>
+        </div>
+      </div>
 
-      {/* --- Dialog (Keep as is, but ensure selectedListing fields are accessed correctly) --- */}
       <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
         <DialogContent>
           <DialogHeader>
@@ -152,15 +209,18 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
                 />
                 <div>
                   <h4 className="font-semibold">{selectedListing.title}</h4>
-                  {/* Use toLocaleString for better currency formatting */}
-                  <p className="text-gray-600">${selectedListing.price.toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">{selectedListing.category}</p>
-                   {/* Safely access seller details */}
-                   {selectedListing.seller && (
-                     <p className="text-sm text-gray-500">
-                       Seller: {selectedListing.seller.firstName} {selectedListing.seller.lastName}
-                     </p>
-                   )}
+                  <p className="text-gray-600">
+                    ${selectedListing.price.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {selectedListing.category}
+                  </p>
+                  {selectedListing.seller && (
+                    <p className="text-sm text-gray-500">
+                      Seller: {selectedListing.seller.firstName}{" "}
+                      {selectedListing.seller.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-4 mt-6">
