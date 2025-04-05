@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import axios from "axios";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Scrap() {
   const [users, setUsers] = useState([]);
@@ -14,35 +15,44 @@ export default function Scrap() {
   const [selectedLevel, setSelectedLevel] = useState("city"); // city, area, colony, or user
   const [selectedRegion, setSelectedRegion] = useState(null);
 
-  // Fetch sellers with listings from the backend
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pickupDate, setPickupDate] = useState("");
+  const [selectedArea, setSelectedArea] = useState("");
+  const [selectedColony, setSelectedColony] = useState("");
+  const [facilityName, setFacilityName] = useState("Green Recycling Facility");
+  const [facilityAddress, setFacilityAddress] = useState("123 Green Street, City");
+
   useEffect(() => {
     const fetchSellersWithListings = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/users/sellers-with-listings");
-        setUsers(response.data.data);
+        const response = await axios.get("http://localhost:5000/api/listings/scrap");
+        setUsers(response.data.data || []);
       } catch (error) {
         console.error("Failed to fetch sellers with listings:", error);
       }
     };
-
     fetchSellersWithListings();
   }, []);
 
-  // Update heatmap data based on the selected level and region
   useEffect(() => {
     if (selectedLevel === "city") {
       const cityHeatmap = users.reduce((acc, user) => {
-        const city = user.address.city;
+        const city = user.address.city.toLowerCase();
         if (!acc[city]) {
           acc[city] = {
             lat: user.address.coordinates.lat,
             lng: user.address.coordinates.lng,
             weight: 1,
-            name: city,
-            totalRequests: users.filter((u) => u.address.city === city).length,
+            name: city.charAt(0).toUpperCase() + city.slice(1),
+            totalRequests: users.filter(
+              (u) => u.address.city.toLowerCase() === city && u.listings?.length > 0
+            ).length,
             estimatedWeight: `${users
-              .filter((u) => u.address.city === city)
-              .reduce((sum, u) => sum + parseFloat(u.estimatedWeight), 0)} kg`,
+              .filter((u) => u.address.city.toLowerCase() === city && u.listings?.length > 0)
+              .reduce((sum, u) => sum + parseFloat(u.estimatedWeight || 0), 0)} kg`,
+            hasScheduledPickup: users.some(
+              (u) => u.address.city.toLowerCase() === city && u.listings?.some((l) => l.pickupDetails)
+            ),
           };
         } else {
           acc[city].weight += 1;
@@ -52,21 +62,35 @@ export default function Scrap() {
       setHeatmapData(Object.values(cityHeatmap));
     } else if (selectedLevel === "area") {
       const areaHeatmap = users
-        .filter((user) => user.address.city === selectedRegion?.name)
+        .filter((user) => user.address.city.toLowerCase() === selectedRegion?.name.toLowerCase())
         .reduce((acc, user) => {
-          const area = user.address.area;
+          const area = user.address.area.toLowerCase();
           if (!acc[area]) {
             acc[area] = {
               lat: user.address.coordinates.lat,
               lng: user.address.coordinates.lng,
               weight: 1,
-              name: area,
+              name: area.charAt(0).toUpperCase() + area.slice(1),
               totalRequests: users.filter(
-                (u) => u.address.area === area && u.address.city === selectedRegion?.name
+                (u) =>
+                  u.address.area.toLowerCase() === area &&
+                  u.address.city.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+                  u.listings?.length > 0
               ).length,
               estimatedWeight: `${users
-                .filter((u) => u.address.area === area && u.address.city === selectedRegion?.name)
-                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight), 0)} kg`,
+                .filter(
+                  (u) =>
+                    u.address.area.toLowerCase() === area &&
+                    u.address.city.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+                    u.listings?.length > 0
+                )
+                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight || 0), 0)} kg`,
+              hasScheduledPickup: users.some(
+                (u) =>
+                  u.address.area.toLowerCase() === area &&
+                  u.address.city.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+                  u.listings?.some((l) => l.pickupDetails)
+              ),
             };
           } else {
             acc[area].weight += 1;
@@ -76,23 +100,35 @@ export default function Scrap() {
       setHeatmapData(Object.values(areaHeatmap));
     } else if (selectedLevel === "colony") {
       const colonyHeatmap = users
-        .filter((user) => user.address.area === selectedRegion?.name)
+        .filter((user) => user.address.area.toLowerCase() === selectedRegion?.name.toLowerCase())
         .reduce((acc, user) => {
-          const colony = user.address.colony;
+          const colony = user.address.colony.toLowerCase();
           if (!acc[colony]) {
             acc[colony] = {
               lat: user.address.coordinates.lat,
               lng: user.address.coordinates.lng,
               weight: 1,
-              name: colony,
+              name: colony.charAt(0).toUpperCase() + colony.slice(1),
               totalRequests: users.filter(
-                (u) => u.address.colony === colony && u.address.area === selectedRegion?.name
+                (u) =>
+                  u.address.colony.toLowerCase() === colony &&
+                  u.address.area.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+                  u.listings?.length > 0
               ).length,
               estimatedWeight: `${users
                 .filter(
-                  (u) => u.address.colony === colony && u.address.area === selectedRegion?.name
+                  (u) =>
+                    u.address.colony.toLowerCase() === colony &&
+                    u.address.area.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+                    u.listings?.length > 0
                 )
-                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight), 0)} kg`,
+                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight || 0), 0)} kg`,
+              hasScheduledPickup: users.some(
+                (u) =>
+                  u.address.colony.toLowerCase() === colony &&
+                  u.address.area.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+                  u.listings?.some((l) => l.pickupDetails)
+              ),
             };
           } else {
             acc[colony].weight += 1;
@@ -103,7 +139,11 @@ export default function Scrap() {
     } else if (selectedLevel === "user") {
       setHeatmapData(
         users
-          .filter((user) => user.address.colony === selectedRegion?.name)
+          .filter(
+            (user) =>
+              user.address.colony.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+              user.listings?.length > 0
+          )
           .map((user) => ({
             ...user.address.coordinates,
             type: "user",
@@ -113,18 +153,21 @@ export default function Scrap() {
     }
   }, [selectedLevel, selectedRegion, users]);
 
-  // Handle region click to drill down into the next level
   const handleRegionClick = (region) => {
     if (selectedLevel === "city") {
       setSelectedLevel("area");
       setMapCenter({ lat: region.lat, lng: region.lng });
       setMapZoom(12);
       setSelectedRegion(region);
+      setSelectedArea(region.name);
+      setSelectedColony("");
     } else if (selectedLevel === "area") {
       setSelectedLevel("colony");
       setMapCenter({ lat: region.lat, lng: region.lng });
       setMapZoom(14);
       setSelectedRegion(region);
+      setSelectedColony(region.name);
+      setSelectedArea(selectedRegion.name);
     } else if (selectedLevel === "colony") {
       setSelectedLevel("user");
       setMapCenter({ lat: region.lat, lng: region.lng });
@@ -133,44 +176,75 @@ export default function Scrap() {
     }
   };
 
-  // Handle going back to the previous level
   const goBack = () => {
     if (selectedLevel === "user") {
-      // Going back from 'user' to 'colony'
       setSelectedLevel("colony");
       setMapZoom(14);
-      // Find the parent area for the selected colony
       const parentArea = users.find(
-        (user) => user.address.colony === selectedRegion?.name
-      )?.address.area;
+        (user) => user.address.colony.toLowerCase() === selectedRegion?.name.toLowerCase()
+      )?.address.area.toLowerCase();
       const areaRegion = {
-        name: parentArea,
-        lat: users.find((user) => user.address.area === parentArea)?.address.coordinates.lat,
-        lng: users.find((user) => user.address.area === parentArea)?.address.coordinates.lng,
+        name: parentArea.charAt(0).toUpperCase() + parentArea.slice(1),
+        lat: users.find((user) => user.address.area.toLowerCase() === parentArea)?.address.coordinates.lat,
+        lng: users.find((user) => user.address.area.toLowerCase() === parentArea)?.address.coordinates.lng,
       };
       setSelectedRegion(areaRegion);
+      setSelectedColony(selectedRegion.name);
+      setSelectedArea(parentArea.charAt(0).toUpperCase() + parentArea.slice(1));
       setMapCenter({ lat: areaRegion.lat, lng: areaRegion.lng });
     } else if (selectedLevel === "colony") {
-      // Going back from 'colony' to 'area'
       setSelectedLevel("area");
       setMapZoom(12);
-      // Find the parent city for the selected area
       const parentCity = users.find(
-        (user) => user.address.area === selectedRegion?.name
-      )?.address.city;
+        (user) => user.address.area.toLowerCase() === selectedRegion?.name.toLowerCase()
+      )?.address.city.toLowerCase();
       const cityRegion = {
-        name: parentCity,
-        lat: users.find((user) => user.address.city === parentCity)?.address.coordinates.lat,
-        lng: users.find((user) => user.address.city === parentCity)?.address.coordinates.lng,
+        name: parentCity.charAt(0).toUpperCase() + parentCity.slice(1),
+        lat: users.find((user) => user.address.city.toLowerCase() === parentCity)?.address.coordinates.lat,
+        lng: users.find((user) => user.address.city.toLowerCase() === parentCity)?.address.coordinates.lng,
       };
       setSelectedRegion(cityRegion);
+      setSelectedArea(selectedRegion.name);
+      setSelectedColony("");
       setMapCenter({ lat: cityRegion.lat, lng: cityRegion.lng });
     } else if (selectedLevel === "area") {
-      // Going back from 'area' to 'city'
       setSelectedLevel("city");
       setMapZoom(10);
       setSelectedRegion(null);
-      setMapCenter({ lat: 18.5204, lng: 73.8567 }); // Reset to default center (Pune)
+      setSelectedArea("");
+      setSelectedColony("");
+      setMapCenter({ lat: 18.5204, lng: 73.8567 });
+    }
+  };
+
+  const handleSchedulePickup = async () => {
+    const today = new Date().toISOString().split("T")[0];
+    if (!pickupDate) {
+      alert("Please select a pickup date.");
+      return;
+    }
+    if (pickupDate < today) {
+      alert("Pickup date must be in the future.");
+      return;
+    }
+    try {
+      await axios.post("http://localhost:5000/api/pickups/schedule", {
+        area: selectedArea ? selectedArea.trim().toLowerCase() : undefined,
+        colony: selectedColony ? selectedColony.trim().toLowerCase() : undefined,
+        facilityName,
+        facilityAddress,
+        pickupDate,
+      });
+      alert("Pickup scheduled successfully!");
+      setIsModalOpen(false);
+      setPickupDate("");
+      setSelectedArea("");
+      setSelectedColony("");
+      const response = await axios.get("http://localhost:5000/api/listings/scrap");
+      setUsers(response.data.data || []);
+    } catch (error) {
+      console.error("Error scheduling pickup:", error);
+      alert("Failed to schedule pickup.");
     }
   };
 
@@ -178,7 +252,6 @@ export default function Scrap() {
     <div className="min-h-screen">
       <Navbar />
       <div className="flex pt-16">
-        {/* Map Section */}
         <div className="w-2/3 h-screen sticky top-0 p-4">
           <Heatmap
             data={heatmapData}
@@ -188,7 +261,6 @@ export default function Scrap() {
           />
         </div>
 
-        {/* Sidebar Section */}
         <div className="w-1/3 p-6 bg-gray-50 border-l">
           {selectedRegion && (
             <Button variant="outline" className="mb-4 flex items-center gap-2" onClick={goBack}>
@@ -203,38 +275,118 @@ export default function Scrap() {
                 ? `Users in ${selectedRegion?.name || "Selected Region"}`
                 : `Heatmap for ${selectedLevel}`}
             </h2>
-            {selectedLevel === "user"
-              ? users
-                  .filter((user) => user.address.colony === selectedRegion?.name)
-                  .map((user, index) => (
-                    <Card key={index} className="mb-4">
-                      <CardHeader>
-                        <CardTitle>{user.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <CardDescription>Items: {user.items.join(", ")}</CardDescription>
-                        <CardDescription>Estimated Weight: {user.estimatedWeight}</CardDescription>
-                      </CardContent>
-                    </Card>
-                  ))
-              : heatmapData.map((region, index) => (
-                  <Card
-                    key={index}
-                    className="mb-4 cursor-pointer hover:bg-gray-100 transition"
-                    onClick={() => handleRegionClick(region)}
-                  >
+            {selectedLevel === "user" ? (
+              users
+                .filter(
+                  (user) =>
+                    user.address.colony.toLowerCase() === selectedRegion?.name.toLowerCase() &&
+                    user.listings?.length > 0
+                )
+                .map((user, index) => (
+                  <Card key={index} className="mb-4">
                     <CardHeader>
-                      <CardTitle>{region.name}</CardTitle>
+                      <CardTitle>{user.name}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <CardDescription>Total Requests: {region.totalRequests}</CardDescription>
-                      <CardDescription>Estimated Weight: {region.estimatedWeight}</CardDescription>
+                      <CardDescription>
+                        Items:{" "}
+                        {user.listings?.length > 0 ? user.listings.map((l) => l.title).join(", ") : "None"}
+                      </CardDescription>
+                      <CardDescription>Estimated Weight: {user.estimatedWeight || "0 kg"}</CardDescription>
+                      {user.listings?.map((listing, idx) => (
+                        <div key={idx} className="mt-2">
+                          {listing.pickupDetails && (
+                            <div>
+                              <p>
+                                <strong>Pickup Scheduled:</strong> {listing.pickupDetails.facilityName},{" "}
+                                {listing.pickupDetails.facilityAddress}
+                              </p>
+                              <p>
+                                <strong>Date:</strong>{" "}
+                                {new Date(listing.pickupDetails.pickupDate).toLocaleDateString()}
+                              </p>
+                              <p>
+                                <strong>Status:</strong> {listing.pickupDetails.status}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
-                ))}
+                ))
+            ) : (
+              heatmapData.map((region, index) => (
+                <Card
+                  key={index}
+                  className="mb-4 cursor-pointer hover:bg-gray-100 transition"
+                  onClick={() => handleRegionClick(region)}
+                >
+                  <CardHeader>
+                    <CardTitle>{region.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>Total Requests: {region.totalRequests}</CardDescription>
+                    <CardDescription>Estimated Weight: {region.estimatedWeight}</CardDescription>
+                    {(selectedLevel === "area" || selectedLevel === "colony") && !region.hasScheduledPickup && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (selectedLevel === "area") {
+                            setSelectedArea(region.name);
+                            setSelectedColony("");
+                          } else if (selectedLevel === "colony") {
+                            setSelectedColony(region.name);
+                            setSelectedArea(
+                              users.find(
+                                (u) => u.address.colony.toLowerCase() === region.name.toLowerCase()
+                              )?.address.area || ""
+                            );
+                          }
+                          setIsModalOpen(true);
+                        }}
+                        className="mt-2"
+                      >
+                        Schedule Pickup
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Schedule Pickup for {selectedLevel === "colony" ? selectedColony : selectedArea}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder={selectedLevel === "colony" ? "Colony" : "Area"}
+              value={selectedLevel === "colony" ? selectedColony : selectedArea}
+              onChange={(e) =>
+                selectedLevel === "colony"
+                  ? setSelectedColony(e.target.value)
+                  : setSelectedArea(e.target.value)
+              }
+              className="w-full border p-2 rounded"
+            />
+            <input
+              type="date"
+              value={pickupDate}
+              onChange={(e) => setPickupDate(e.target.value)}
+              className="w-full border p-2 rounded"
+            />
+            <Button onClick={handleSchedulePickup}>Confirm</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

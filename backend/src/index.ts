@@ -10,7 +10,7 @@ import { notFound, errorHandler } from './middleware/errorMiddleware';
 import dotenv from 'dotenv';
 import requestRoutes from './routes/requestRoutes';
 import { scheduleScrapUpdateJob } from './services/scheduleScrapUpdate';
-
+import pickupRoutes from "./routes/pickupRoutes";
 dotenv.config();
 
 // Connect to MongoDB
@@ -29,7 +29,7 @@ app.use('/api/recycling', recyclingRoutes);
 app.use('/api/users', userRoutes); // Use userRoutes
 app.use('/api/requests', requestRoutes);
 app.use("/api/uploads", uploadRoutes);
-
+app.use("/api/pickups", pickupRoutes);
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);

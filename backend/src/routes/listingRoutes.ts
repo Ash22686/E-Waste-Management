@@ -2,13 +2,14 @@ import { Router } from 'express';
 import * as listingController from '../controllers/listingController';
 import { protect, restrictTo } from '../middleware/authMiddleware';
 import upload from '../middleware/uploadMiddleware';
+import { getScrapListings } from "../controllers/listingController";
 
 const router = Router();
 
 // Public routes
 router.get('/', listingController.getAllListings);
 
-
+router.get("/scrap", getScrapListings);
 // ✅ Move `/seller` above `/:id`
 router.get('/seller', protect, restrictTo('seller'), listingController.getSellerListings);
 

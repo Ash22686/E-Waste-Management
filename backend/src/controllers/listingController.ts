@@ -1,16 +1,14 @@
-import { Request as ExpressRequest, Response } from 'express'; // Use ExpressRequest alias to avoid conflict
-import { AuthRequest as Request } from '../types'; // Keep your AuthRequest type
+import { Request as ExpressRequest, Response } from 'express';
+import { AuthRequest as Request } from '../types';
 import * as listingService from '../services/listingService';
-import Listing from '../models/Listing'; // Import the model
+import Listing from '../models/Listing';
+import User from '../models/User';
+import Pickup from '../models/Pickup';
 
 // Get all listings
 export const getAllListings = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Optional: Add filtering here if you want the API endpoint itself
-    // to only return non-scrap items by default.
-    // const query = { isScrapItem: false }; // Example server-side filter
-    // const listings = await listingService.getAllListings(query);
-    const listings = await listingService.getAllListings(); // Keep as is if frontend handles filtering
+    const listings = await listingService.getAllListings();
 
     res.status(200).json({
       success: true,
@@ -23,7 +21,6 @@ export const getAllListings = async (req: Request, res: Response): Promise<void>
     });
   }
 };
-
 
 // Get listing by ID
 export const getListingById = async (req: Request, res: Response): Promise<void> => {
@@ -61,8 +58,7 @@ export const getSellerListings = async (req: Request, res: Response): Promise<vo
     }
     const sellerId = req.user._id.toString();
 
-    // Consider filtering scrap items here too if needed for seller dashboard
-    // const listings = await listingService.getSellerListings(sellerId, { isScrapItem: false });
+    // Use the updated service to get listings with pickup details
     const listings = await listingService.getSellerListings(sellerId);
 
     res.status(200).json({
@@ -123,14 +119,14 @@ export const updateListing = async (req: Request, res: Response): Promise<void> 
     });
 
     if (!updatedListing) {
-      res.status(404).json({ success: false, message: "Listing not found" });
+      res.status(404).json({ success: false, message: 'Listing not found' });
       return;
     }
 
     res.status(200).json({ success: true, data: updatedListing });
   } catch (error: any) {
-    console.error("Error updating listing:", error);
-    res.status(500).json({ success: false, message: "Failed to update listing" });
+    console.error('Error updating listing:', error);
+    res.status(500).json({ success: false, message: 'Failed to update listing' });
   }
 };
 
@@ -175,6 +171,71 @@ export const getFeaturedListings = async (req: Request, res: Response): Promise<
     });
   } catch (error: any) {
     res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get scrap listings
+export const getScrapListings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const scrapListings = await Listing.find({ isScrapItem: true }).lean();
+
+    const sellerIds = scrapListings.map((listing) => listing.sellerId.toString());
+    const sellers = await User.find({ _id: { $in: sellerIds } }).lean();
+
+    const listingIds = scrapListings.map((listing) => listing._id);
+    const pickups = await Pickup.find({ listingId: { $in: listingIds } }).lean();
+
+    const pickupMap = pickups.reduce<Record<string, { facilityName: string; facilityAddress: string; pickupDate: Date; status: string }>>((acc, pickup) => {
+      acc[pickup.listingId.toString()] = {
+        facilityName: pickup.facilityName,
+        facilityAddress: pickup.facilityAddress,
+        pickupDate: pickup.pickupDate,
+        status: pickup.status,
+      };
+      return acc;
+    }, {});
+
+    const scrapData = sellers.map((seller: any) => {
+      const sellerListings = scrapListings.filter(
+        (listing) => listing.sellerId.toString() === seller._id.toString()
+      );
+
+      const listingsWithPickup = sellerListings.map((listing) => ({
+        _id: listing._id,
+        title: listing.title,
+        estimatedWeight: listing.estimatedWeight || 0,
+        pickupDetails: pickupMap[listing._id.toString()] || null,
+      }));
+
+      return {
+        listingId: sellerListings.length > 0 ? sellerListings[0]._id : null,
+        sellerId: seller._id.toString(),
+        name: `${seller.firstName} ${seller.lastName}`,
+        address: {
+          city: seller.address.city,
+          area: seller.address.area,
+          colony: seller.address.colony,
+          coordinates: seller.address.coordinates,
+        },
+        items: listingsWithPickup.map((listing) => listing.title),
+        estimatedWeight: `${listingsWithPickup.reduce(
+          (sum, listing) => sum + (listing.estimatedWeight || 0),
+          0
+        )} kg`,
+        listings: listingsWithPickup,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: scrapData,
+    });
+  } catch (error: any) {
+    console.error('Error fetching scrap listings:', error);
+    res.status(500).json({
       success: false,
       message: error.message,
     });

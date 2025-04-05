@@ -1,5 +1,7 @@
+import Pickup from '../models/Pickup';
 import Listing from '../models/Listing';
 import { IListing } from '../types';
+import { Types } from 'mongoose';
 
 // Get all listings
 export const getAllListings = async (): Promise<IListing[]> => {
@@ -8,9 +10,37 @@ export const getAllListings = async (): Promise<IListing[]> => {
 };
 
 // Get seller-specific listings
-export const getSellerListings = async (sellerId: string): Promise<IListing[]> => {
-  const listings = await Listing.find({ sellerId }).sort({ createdAt: -1 }).lean();
-  return listings as unknown as IListing[];
+export const getSellerListings = async (sellerId: string): Promise<any[]> => {
+  try {
+    const listings = await Listing.find({ sellerId: new Types.ObjectId(sellerId) })
+      .lean()
+      .exec();
+
+    const listingIds = listings.map((listing) => listing._id);
+    const pickups = await Pickup.find({ listingId: { $in: listingIds } })
+      .lean()
+      .exec();
+
+    const pickupMap = pickups.reduce<Record<string, { facilityName: string; facilityAddress: string; pickupDate: Date; status: string }>>((acc, pickup) => {
+      acc[pickup.listingId.toString()] = {
+        facilityName: pickup.facilityName,
+        facilityAddress: pickup.facilityAddress,
+        pickupDate: pickup.pickupDate,
+        status: pickup.status,
+      };
+      return acc;
+    }, {});
+
+    const listingsWithPickups = listings.map((listing) => ({
+      ...listing,
+      pickupDetails: pickupMap[listing._id.toString()] || null,
+    }));
+
+    return listingsWithPickups;
+  } catch (error) {
+    console.error('Error in getSellerListings:', error);
+    throw error;
+  }
 };
 
 // Get listing by ID

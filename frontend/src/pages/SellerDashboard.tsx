@@ -4,7 +4,8 @@ import { getCurrentUser } from "@/services/authService";
 import { createListing, getSellerListings, deleteListing, updateListing } from "@/services/listingService";
 import { Navbar } from "@/components/Navbar";
 import SellerRequests from "@/components/SellerRequests";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
+import axios from "axios";
 
 export default function SellerDashboard() {
   const [user, setUser] = useState(null);
@@ -19,7 +20,7 @@ export default function SellerDashboard() {
     category: "",
     timeLeft: "",
     estimatedWeight: "",
-    grade: "", // Added grade property
+    grade: "",
     image: null,
     description: "",
   });
@@ -27,11 +28,9 @@ export default function SellerDashboard() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("myListings");
   const [isDragging, setIsDragging] = useState(false);
-  // Added isReviewing state variable
   const [isReviewing, setIsReviewing] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch user data and listings on mount
   useEffect(() => {
     const fetchSellerData = async () => {
       setLoading(true);
@@ -60,27 +59,25 @@ export default function SellerDashboard() {
     fetchSellerData();
   }, [navigate]);
 
-  // Toggle add listing modal and reset form
   const toggleAddListing = () => {
     setIsAddListingOpen(!isAddListingOpen);
     if (!isAddListingOpen) {
       setNewListing({
-              title: "",
-              price: "",
-              location: "",
-              category: "",
-              timeLeft: "",
-              estimatedWeight: "",
-              grade: "", // Ensure grade is included
-              image: null,
-              description: "",
-            });
-      setIsReviewing(false); // Reset review step
+        title: "",
+        price: "",
+        location: "",
+        category: "",
+        timeLeft: "",
+        estimatedWeight: "",
+        grade: "",
+        image: null,
+        description: "",
+      });
+      setIsReviewing(false);
       setError(null);
     }
   };
 
-  // Handle image file selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file && file.size <= 10 * 1024 * 1024) {
@@ -91,7 +88,6 @@ export default function SellerDashboard() {
     }
   };
 
-  // Drag-and-drop event handlers
   const handleDragOver = (e) => e.preventDefault();
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -113,7 +109,6 @@ export default function SellerDashboard() {
     }
   };
 
-  // Submit new listing with image upload and Gemini grading
   const handleAddListingSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -180,15 +175,11 @@ export default function SellerDashboard() {
       };
 
       const formData = new FormData();
-      formData.append("title", listingData.title);
-      formData.append("description", listingData.description);
-      formData.append("grade", listingData.grade);
-      formData.append("price", listingData.price);
-      formData.append("location", listingData.location);
-      formData.append("category", listingData.category);
-      formData.append("timeLeft", listingData.timeLeft);
-      formData.append("estimatedWeight", listingData.estimatedWeight);
-      formData.append("image", listingData.image);
+      Object.entries(listingData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
+      });
 
       await createListing(formData, token);
 
@@ -204,7 +195,6 @@ export default function SellerDashboard() {
     }
   };
 
-  // Delete a listing
   const handleDeleteListing = async (id) => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
       try {
@@ -224,14 +214,12 @@ export default function SellerDashboard() {
     }
   };
 
-  // Open edit modal with listing data
   const handleEditListing = (listing) => {
     setEditListing(listing);
     setIsEditListingOpen(true);
     setError(null);
   };
 
-  // Handle edit image change
   const handleEditImageChange = (e) => {
     const file = e.target.files[0];
     if (file && file.size <= 10 * 1024 * 1024) {
@@ -242,7 +230,6 @@ export default function SellerDashboard() {
     }
   };
 
-  // Handle edit drop
   const handleEditDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
@@ -255,7 +242,6 @@ export default function SellerDashboard() {
     }
   };
 
-  // Submit updated listing
   const handleUpdateListing = async (e) => {
     e.preventDefault();
     setError(null);
@@ -310,7 +296,6 @@ export default function SellerDashboard() {
     }
   };
 
-  // Loading UI
   if (loading && !isAddListingOpen && !isEditListingOpen) {
     return (
       <div className="min-h-screen py-20 bg-gradient-to-br from-green-50 to-gray-50 flex items-center justify-center">
@@ -328,7 +313,6 @@ export default function SellerDashboard() {
     <div className="min-h-screen py-20 bg-gradient-to-br from-green-50 to-gray-50">
       <Navbar />
       <div className="container mx-auto px-4 pb-8">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow">
           <h1 className="text-3xl font-bold text-gray-800">Seller Dashboard</h1>
           <button
@@ -339,7 +323,6 @@ export default function SellerDashboard() {
           </button>
         </div>
 
-        {/* Error Display */}
         {error && !isAddListingOpen && !isEditListingOpen && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="toast">
             <ToastContainer />
@@ -347,7 +330,6 @@ export default function SellerDashboard() {
           </div>
         )}
 
-        {/* Tabs */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex">
@@ -374,7 +356,6 @@ export default function SellerDashboard() {
             </nav>
           </div>
 
-          {/* My Listings Tab */}
           {activeTab === "myListings" && (
             <div className="mt-6">
               {myListings.length === 0 ? (
@@ -437,21 +418,44 @@ export default function SellerDashboard() {
                             ${listing.price}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(listing.date).toLocaleDateString()}
+                            {new Date(listing.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => handleEditListing(listing)}
-                              className="text-blue-600 hover:text-blue-900 mr-4"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteListing(listing._id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Delete
-                            </button>
+                            {listing.isScrapItem ? (
+                              <div>
+                                <p className="text-red-600">Scrap Item</p>
+                                {listing.pickupDetails && (
+                                  <>
+                                    <p>
+                                      <strong>Pickup By:</strong> {listing.pickupDetails.facilityName},{" "}
+                                      {listing.pickupDetails.facilityAddress}
+                                    </p>
+                                    <p>
+                                      <strong>Pickup Date:</strong>{" "}
+                                      {new Date(listing.pickupDetails.pickupDate).toLocaleDateString()}
+                                    </p>
+                                    <p>
+                                      <strong>Status:</strong> {listing.pickupDetails.status}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleEditListing(listing)}
+                                  className="text-blue-600 hover:text-blue-900 mr-4"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteListing(listing._id)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -469,7 +473,6 @@ export default function SellerDashboard() {
           )}
         </div>
 
-        {/* Add Listing Modal */}
         {isAddListingOpen && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4 max-h-[80vh] overflow-y-auto">
@@ -518,7 +521,6 @@ export default function SellerDashboard() {
                   </div>
                 </form>
               ) : (
-                // Updated review form with all fields
                 <form onSubmit={handleConfirmListing}>
                   <div className="space-y-2">
                     <div>
@@ -606,7 +608,6 @@ export default function SellerDashboard() {
                         required
                       />
                     </div>
-                    
                     <div>
                       <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
                         Estimated Weight (kg)
@@ -645,7 +646,6 @@ export default function SellerDashboard() {
           </div>
         )}
 
-        {/* Edit Listing Modal */}
         {isEditListingOpen && editListing && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4 max-h-[80vh] overflow-y-auto">
@@ -751,7 +751,6 @@ export default function SellerDashboard() {
                       required
                     />
                   </div>
-                  
                   <div>
                     <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
                       Estimated Weight (kg)
@@ -849,4 +848,3 @@ export default function SellerDashboard() {
     </div>
   );
 }
-
