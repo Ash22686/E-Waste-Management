@@ -57,7 +57,7 @@ export const register = async (userData: IRegisterRequest): Promise<{ user: IUse
         _id: user._id.toString(),
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email,
+        email: user.email || "unknown@example.com", // Provide a default value or handle undefined
         userType: user.userType,
         address: user.address,
     };
@@ -89,7 +89,7 @@ export const login = async (credentials: ILoginRequest): Promise<{ user: IUserRe
         _id: user._id.toString(),
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email,
+        email: user.email || "unknown@example.com",
         userType: user.userType,
         address: user.address,
     };
@@ -110,7 +110,7 @@ export const getCurrentUser = async (userId: string): Promise<IUserResponse> => 
         _id: user._id.toString(),
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email,
+        email: user.email || "unknown@example.com",
         userType: user.userType,
         address: user.address,
     };

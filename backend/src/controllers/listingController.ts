@@ -6,9 +6,11 @@ import Listing from '../models/Listing'; // Import the model
 // Get all listings
 export const getAllListings = async (req: Request, res: Response): Promise<void> => {
   try {
-    // You might want to filter out scrap items here by default eventually
-    // const listings = await listingService.getAllListings({ isScrapItem: false });
-    const listings = await listingService.getAllListings();
+    // Optional: Add filtering here if you want the API endpoint itself
+    // to only return non-scrap items by default.
+    // const query = { isScrapItem: false }; // Example server-side filter
+    // const listings = await listingService.getAllListings(query);
+    const listings = await listingService.getAllListings(); // Keep as is if frontend handles filtering
 
     res.status(200).json({
       success: true,
@@ -21,6 +23,7 @@ export const getAllListings = async (req: Request, res: Response): Promise<void>
     });
   }
 };
+
 
 // Get listing by ID
 export const getListingById = async (req: Request, res: Response): Promise<void> => {
