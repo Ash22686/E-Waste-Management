@@ -24,9 +24,11 @@ export default function Marketplace() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
+        
         const response = await getAllListings();
         // Explicitly type the API response data if needed, or assume it matches Listing[]
         const allApiListings: Listing[] = response.data;
+        
 
         // --- Filter out scrap items ---
         const activeListings = allApiListings.filter(
