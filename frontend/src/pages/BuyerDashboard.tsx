@@ -3,46 +3,52 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/services/authService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, MapPin } from "lucide-react"; // Import icons
-import { BuyerRequest, User as AppUser } from "@/types/types"; // Use AppUser alias to avoid conflict
+import { ArrowLeft, Mail, MapPin } from "lucide-react"; 
+import { BuyerRequest, User as AppUser } from "@/types/types"; 
 import { Navbar } from "@/components/Navbar";
+import { toast } from "react-toastify";
 
 export default function BuyerDashboard() {
   const [user, setUser] = useState<AppUser | null>(null); // Use AppUser type
   const [requests, setRequests] = useState<BuyerRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  // const [refreshKey, setRefreshKey] = useState(0); // Keep if needed for manual refresh, otherwise remove if fetch logic is stable
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true); // Set loading true at the start of loadData
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/auth/login');
-        return;
-      }
+      const loadData = async () => {
+          setLoading(true); // Set loading true at the start of loadData
+          const token = localStorage.getItem("token");
+          if (!token) {
+              navigate("/auth/login");
+              return;
+          }
 
-      try {
-        // Load user data
-        const userData = await getCurrentUser(token);
-        // Assuming getCurrentUser returns { user: AppUser } based on your previous code
-        if (userData?.user) {
-            setUser(userData.user);
-        } else {
-            // Handle case where user data is not found but token exists (e.g., expired token needs backend check)
-             console.error("User data not found, redirecting to login.");
-             localStorage.removeItem('token'); // Clear invalid token
-             navigate('/auth/login');
-             return;
-        }
+          try {
+              // Load user data
+              const userData = await getCurrentUser(token);
+              if (userData?.user) {
+                  setUser(userData.user);
+              } else {
+                  console.error("User data not found, redirecting to login.");
+                  localStorage.removeItem("token"); // Clear invalid token
+                  navigate("/auth/login");
+                  return;
+              }
 
+              // Load requests
+              const response = await fetch("http://localhost:5000/api/requests/buyer", {
+                  headers: { Authorization: `Bearer ${token}` },
+              });
 
-        // Load requests - Using the endpoint defined in useEffect initially
-        // Ensure this endpoint populates sellerId.address correctly
-        const response = await fetch('http://localhost:5000/api/requests/buyer', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+              if (!response.ok) {
+                  if (response.status === 401) {
+                      console.error("Unauthorized access. Redirecting to login.");
+                      localStorage.removeItem("token");
+                      navigate("/auth/login");
+                      return;
+                  }
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
 
         if (!response.ok) {
             // Handle HTTP errors (e.g., 401 Unauthorized, 404 Not Found, 500 Server Error)
@@ -54,99 +60,90 @@ export default function BuyerDashboard() {
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+              const data = await response.json();
+              console.log("API Response Data:", data); // Debug: Log the received data
 
-        const data = await response.json();
-        console.log("API Response Data:", data); // Debug: Log the received data
+              if (data.success && Array.isArray(data.data)) {
+                  setRequests(data.data);
+              } else {
+                  console.error(
+                      "Failed to parse requests or data format incorrect:",
+                      data.message || "No data array found"
+                  );
+                  setRequests([]); // Set to empty array to avoid errors during map
+                  toast.error(data.message || "Failed to load requests properly.");
+              }
+          } catch (error) {
+              console.error("Failed to load dashboard data:", error);
+              toast.error("Failed to load dashboard data. Please check your connection or try again later.");
+          } finally {
+              setLoading(false);
+          }
+      };
 
-        if (data.success && Array.isArray(data.data)) {
-            setRequests(data.data);
-        } else {
-            // Handle cases where API call was successful (2xx) but data is not as expected
-            console.error("Failed to parse requests or data format incorrect:", data.message || "No data array found");
-            setRequests([]); // Set to empty array to avoid errors during map
-             // Optionally show an alert, but console error is often sufficient for developers
-             // alert(data.message || "Failed to load requests properly.");
-        }
-
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-        // Show user-friendly error message
-        alert("Failed to load dashboard data. Please check your connection or try again later.");
-        // Optional: Redirect to login or a generic error page if it's a critical failure
-        // localStorage.removeItem('token');
-        // navigate('/auth/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  // }, [navigate, refreshKey]); // Only include refreshKey if you have a button/mechanism to increment it
-   }, [navigate]); // Dependency array usually just needs navigate unless refreshKey is used
-
-
-  // Note: Removed the unused fetchRequests function to avoid confusion with the one in useEffect
+      loadData();
+  }, [navigate]);
 
   const handleCancelRequest = async (requestId: string) => {
-    const token = localStorage.getItem('token');
-     if (!token) {
-        alert("Authentication error. Please log in again.");
-        navigate('/auth/login');
-        return;
-      }
-    try {
-      const response = await fetch(`http://localhost:5000/api/requests/${requestId}/cancel`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: 'cancelled' })
-      });
-
-       if (response.status === 401) {
-          alert("Authentication error. Please log in again.");
-          navigate('/auth/login');
+      const token = localStorage.getItem("token");
+      if (!token) {
+          toast.error("Authentication error. Please log in again.");
+          navigate("/auth/login");
           return;
-       }
-
-      const data = await response.json();
-      if (data.success) {
-        setRequests(prev => prev.map(req =>
-          req._id === requestId ? { ...req, status: 'cancelled' } : req
-        ));
-        alert("Request cancelled successfully");
-      } else {
-         alert(data.message || "Failed to cancel request"); // Show backend message if available
       }
-    } catch (error) {
-      console.error("Cancel request error:", error);
-      alert("An error occurred while trying to cancel the request.");
-    }
+      try {
+          const response = await fetch(`http://localhost:5000/api/requests/${requestId}/cancel`, {
+              method: "PATCH",
+              headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ status: "cancelled" }),
+          });
+
+          if (response.status === 401) {
+              toast.error("Authentication error. Please log in again.");
+              navigate("/auth/login");
+              return;
+          }
+
+          const data = await response.json();
+          if (data.success) {
+              setRequests((prev) =>
+                  prev.map((req) => (req._id === requestId ? { ...req, status: "cancelled" } : req))
+              );
+              toast.success("Request cancelled successfully.");
+          } else {
+              toast.error(data.message || "Failed to cancel request.");
+          }
+      } catch (error) {
+          console.error("Cancel request error:", error);
+          toast.error("An error occurred while trying to cancel the request.");
+      }
   };
 
-  // Add this remove handler
-const handleRemoveRequest = async (requestId: string) => {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5000/api/requests/${requestId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
+  const handleRemoveRequest = async (requestId: string) => {
+      try {
+          const token = localStorage.getItem("token");
+          const response = await fetch(`http://localhost:5000/api/requests/${requestId}`, {
+              method: "DELETE",
+              headers: {
+                  Authorization: `Bearer ${token}`,
+              },
+          });
+
+          const data = await response.json();
+          if (data.success) {
+              setRequests((prev) => prev.filter((req) => req._id !== requestId));
+              toast.success("Request removed successfully.");
+          } else {
+              toast.error(data.message || "Failed to remove request.");
+          }
+      } catch (error) {
+          console.error("Failed to remove request:", error);
+          toast.error("Failed to remove request.");
       }
-    });
-    
-    const data = await response.json();
-    if (data.success) {
-      setRequests(prev => prev.filter(req => req._id !== requestId));
-      alert("Request removed successfully");
-    } else {
-      alert(data.message || "Failed to remove request");
-    }
-  } catch (error) {
-    alert("Failed to remove request");
-  }
-};
+  };
 
   // --- Loading and User Check ---
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;

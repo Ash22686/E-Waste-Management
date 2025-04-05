@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/services/authService";
 import { createListing, getSellerListings, deleteListing, updateListing } from "@/services/listingService";
 import { Navbar } from "@/components/Navbar";
 import SellerRequests from "@/components/SellerRequests";
+import { ToastContainer, toast } from 'react-toastify';
 
 export default function SellerDashboard() {
   const [user, setUser] = useState(null);
@@ -194,7 +195,7 @@ export default function SellerDashboard() {
       const listingsResponse = await getSellerListings(token);
       setMyListings(listingsResponse?.data || []);
       setIsAddListingOpen(false);
-      alert("Listing added successfully!");
+      toast("Listing added successfully!");
     } catch (error) {
       console.error("Error adding listing:", error);
       setError("Failed to add listing. Please try again.");
@@ -213,7 +214,7 @@ export default function SellerDashboard() {
         await deleteListing(id, token);
         const listingsResponse = await getSellerListings(token);
         setMyListings(listingsResponse?.data || []);
-        alert("Listing deleted successfully!");
+        toast("Listing deleted successfully!");
       } catch (deleteError) {
         console.error("Error deleting listing:", deleteError);
         setError("Failed to delete listing. Please try again.");
@@ -300,7 +301,7 @@ export default function SellerDashboard() {
       const listingsResponse = await getSellerListings(token);
       setMyListings(listingsResponse?.data || []);
       setIsEditListingOpen(false);
-      alert("Listing updated successfully!");
+      toast("Listing updated successfully!");
     } catch (submitError) {
       console.error("Error updating listing:", submitError);
       setError("Failed to update listing. Please try again.");
@@ -340,7 +341,8 @@ export default function SellerDashboard() {
 
         {/* Error Display */}
         {error && !isAddListingOpen && !isEditListingOpen && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="toast">
+            <ToastContainer />
             <p>{error}</p>
           </div>
         )}
