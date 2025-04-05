@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config(); // Load environment variables
 
-import bcrypt from "bcryptjs";
+const bcrypt: any = require("bcryptjs");
 import jwt from "jsonwebtoken";
 import User, { UserDocument } from "../models/User";
 import { ILoginRequest, IRegisterRequest, IUserResponse } from "../types";
