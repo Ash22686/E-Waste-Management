@@ -87,7 +87,7 @@ npm run dev
 ## ⚡ Usage
 
 1. Visit `http://localhost:3000/` for the frontend.
-2. Use `http://localhost:5000/api/` for backend API routes.
+2. Use `h${process.env.REACT_APP_API_BASE_URL}/api/` for backend API routes.
 3. Register or login to list and buy products.
 
 ---

@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = 'h${process.env.REACT_APP_API_BASE_URL}/api/auth';
 
 export const register = async (userData: any) => {
-  const response = await axios.post(`${API_URL}/register`, userData);
+  const response = await axios.post(`${API_URL}/auth/register`, userData);
   if (response.data) {
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));

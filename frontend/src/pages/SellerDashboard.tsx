@@ -124,7 +124,7 @@ export default function SellerDashboard() {
       const formData = new FormData();
       formData.append("image", newListing.image);
 
-      const uploadResponse = await fetch("http://localhost:5000/api/uploads/upload", {
+      const uploadResponse = await fetch("h${process.env.REACT_APP_API_BASE_URL}/api/uploads/upload", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -255,7 +255,7 @@ export default function SellerDashboard() {
         const formData = new FormData();
         formData.append("image", editListing.newImage);
 
-        const uploadResponse = await fetch("http://localhost:5000/api/uploads/upload", {
+        const uploadResponse = await fetch("h${process.env.REACT_APP_API_BASE_URL}/api/uploads/upload", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

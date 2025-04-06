@@ -9,7 +9,7 @@ export const schedulePickup = async (req: Request, res: Response): Promise<void>
     const { area, colony, facilityName, facilityAddress, pickupDate } = req.body;
 
     // Fetch scrap listings from the /scrap endpoint
-    const scrapResponse = await axios.get("http://localhost:5000/api/listings/scrap");
+    const scrapResponse = await axios.get("h${process.env.REACT_APP_API_BASE_URL}/api/listings/scrap");
     const scrapListings = scrapResponse.data.data;
 
     // Filter listings based on area or colony

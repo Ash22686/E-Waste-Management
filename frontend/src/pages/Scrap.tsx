@@ -25,7 +25,7 @@ export default function Scrap() {
   useEffect(() => {
     const fetchSellersWithListings = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/listings/scrap");
+        const response = await axios.get("h${process.env.REACT_APP_API_BASE_URL}/api/listings/scrap");
         setUsers(response.data.data || []);
       } catch (error) {
         console.error("Failed to fetch sellers with listings:", error);
@@ -228,7 +228,7 @@ export default function Scrap() {
       return;
     }
     try {
-      await axios.post("http://localhost:5000/api/pickups/schedule", {
+      await axios.post("h${process.env.REACT_APP_API_BASE_URL}/api/pickups/schedule", {
         area: selectedArea ? selectedArea.trim().toLowerCase() : undefined,
         colony: selectedColony ? selectedColony.trim().toLowerCase() : undefined,
         facilityName,
@@ -240,7 +240,7 @@ export default function Scrap() {
       setPickupDate("");
       setSelectedArea("");
       setSelectedColony("");
-      const response = await axios.get("http://localhost:5000/api/listings/scrap");
+      const response = await axios.get("h${process.env.REACT_APP_API_BASE_URL}/api/listings/scrap");
       setUsers(response.data.data || []);
     } catch (error) {
       console.error("Error scheduling pickup:", error);

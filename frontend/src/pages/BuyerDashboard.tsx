@@ -36,7 +36,7 @@ export default function BuyerDashboard() {
               }
 
               // Load requests
-              const response = await fetch("http://localhost:5000/api/requests/buyer", {
+              const response = await fetch("h${process.env.REACT_APP_API_BASE_URL}/api/requests/buyer", {
                   headers: { Authorization: `Bearer ${token}` },
               });
 
@@ -92,7 +92,7 @@ export default function BuyerDashboard() {
           return;
       }
       try {
-          const response = await fetch(`http://localhost:5000/api/requests/${requestId}/cancel`, {
+          const response = await fetch(`h${process.env.REACT_APP_API_BASE_URL}/api/requests/${requestId}/cancel`, {
               method: "PATCH",
               headers: {
                   "Content-Type": "application/json",
@@ -125,7 +125,7 @@ export default function BuyerDashboard() {
   const handleRemoveRequest = async (requestId: string) => {
       try {
           const token = localStorage.getItem("token");
-          const response = await fetch(`http://localhost:5000/api/requests/${requestId}`, {
+          const response = await fetch(`h${process.env.REACT_APP_API_BASE_URL}/api/requests/${requestId}`, {
               method: "DELETE",
               headers: {
                   Authorization: `Bearer ${token}`,

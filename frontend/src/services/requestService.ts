@@ -3,7 +3,7 @@
 import axios, { AxiosError } from "axios";
 
 // Adjust the base URL to your requests API endpoint
-const API_BASE_URL = "http://localhost:5000/api/requests";
+const API_BASE_URL = "h${process.env.REACT_APP_API_BASE_URL}/api/requests";
 
 // Interface for the expected structure of a populated request object from the API
 // (Same as defined previously)

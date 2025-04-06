@@ -55,7 +55,7 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
-        const response = await fetch("http://localhost:5000/api/requests/buyer", {
+        const response = await fetch("h${process.env.REACT_APP_API_BASE_URL}/api/requests/buyer", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
@@ -97,7 +97,7 @@ export function MarketplaceListings({ listings = [] }: MarketplaceListingsProps)
         throw new Error("No listing selected");
       }
 
-      const response = await fetch("http://localhost:5000/api/requests", {
+      const response = await fetch("h${process.env.REACT_APP_API_BASE_URL}/api/requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

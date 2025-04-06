@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api/listings";
+const API_BASE_URL = "h${process.env.REACT_APP_API_BASE_URL}/api/listings";
 
 // Get all listings
 export const getAllListings = async () => {
