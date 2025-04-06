@@ -103,8 +103,8 @@ export function MarketplaceFilters({
       <div className="pt-4 border-t">
         <Button variant="outline" className="w-full" onClick={() => {
           setPriceRange([0, 1000]);
-          setSelectedGrades({});
-          setSelectedCategories({});
+          Object.keys(selectedGrades).forEach((key) => (selectedGrades[key] = false));
+          Object.keys(selectedCategories).forEach((key) => toggleCategory(key));
         }}>Reset Filters</Button>
       </div>
     </div>
