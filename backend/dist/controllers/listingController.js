@@ -32,26 +32,19 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFeaturedListings = exports.deleteListing = exports.updateListing = exports.createListing = exports.getSellerListings = exports.getListingById = exports.getAllListings = void 0;
+exports.getScrapListings = exports.getFeaturedListings = exports.deleteListing = exports.updateListing = exports.createListing = exports.getSellerListings = exports.getListingById = exports.getAllListings = void 0;
 const listingService = __importStar(require("../services/listingService"));
 const Listing_1 = __importDefault(require("../models/Listing"));
+const User_1 = __importDefault(require("../models/User"));
+const Pickup_1 = __importDefault(require("../models/Pickup"));
 // Get all listings
-const getAllListings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllListings = async (req, res) => {
     try {
-        const listings = yield listingService.getAllListings();
+        const listings = await listingService.getAllListings();
         res.status(200).json({
             success: true,
             data: listings,
@@ -63,13 +56,13 @@ const getAllListings = (req, res) => __awaiter(void 0, void 0, void 0, function*
             message: error.message,
         });
     }
-});
+};
 exports.getAllListings = getAllListings;
 // Get listing by ID
-const getListingById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getListingById = async (req, res) => {
     try {
         const { id } = req.params;
-        const listing = yield listingService.getListingById(id);
+        const listing = await listingService.getListingById(id);
         if (!listing) {
             res.status(404).json({
                 success: false,
@@ -88,10 +81,10 @@ const getListingById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             message: error.message,
         });
     }
-});
+};
 exports.getListingById = getListingById;
 // Get seller-specific listings
-const getSellerListings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getSellerListings = async (req, res) => {
     try {
         if (!req.user) {
             res.status(401).json({
@@ -100,8 +93,9 @@ const getSellerListings = (req, res) => __awaiter(void 0, void 0, void 0, functi
             });
             return;
         }
-        const sellerId = req.user._id.toString(); // Get the seller's ID from the authenticated user
-        const listings = yield listingService.getSellerListings(sellerId);
+        const sellerId = req.user._id.toString();
+        // Use the updated service to get listings with pickup details
+        const listings = await listingService.getSellerListings(sellerId);
         res.status(200).json({
             success: true,
             data: listings,
@@ -113,10 +107,10 @@ const getSellerListings = (req, res) => __awaiter(void 0, void 0, void 0, functi
             message: error.message,
         });
     }
-});
+};
 exports.getSellerListings = getSellerListings;
 // Create listing
-const createListing = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createListing = async (req, res) => {
     try {
         if (!req.user) {
             res.status(401).json({
@@ -125,9 +119,12 @@ const createListing = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             });
             return;
         }
-        const sellerId = req.user._id; // Get the seller's ID from the authenticated user
-        const listingData = Object.assign(Object.assign({}, req.body), { sellerId });
-        const listing = yield listingService.createListing(listingData);
+        const sellerId = req.user._id;
+        const listingData = {
+            ...req.body,
+            sellerId,
+        };
+        const listing = await listingService.createListing(listingData);
         res.status(201).json({
             success: true,
             data: listing,
@@ -139,33 +136,33 @@ const createListing = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             message: error.message,
         });
     }
-});
+};
 exports.createListing = createListing;
 // Update listing
-const updateListing = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const updateListing = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
-        // Ensure the sellerId is not overwritten
         delete updates.sellerId;
-        const updatedListing = yield Listing_1.default.findByIdAndUpdate(id, updates, {
+        delete updates.isScrapItem;
+        const updatedListing = await Listing_1.default.findByIdAndUpdate(id, updates, {
             new: true,
             runValidators: true,
         });
         if (!updatedListing) {
-            res.status(404).json({ success: false, message: "Listing not found" });
+            res.status(404).json({ success: false, message: 'Listing not found' });
             return;
         }
         res.status(200).json({ success: true, data: updatedListing });
     }
     catch (error) {
-        console.error("Error updating listing:", error);
-        res.status(500).json({ success: false, message: "Failed to update listing" });
+        console.error('Error updating listing:', error);
+        res.status(500).json({ success: false, message: 'Failed to update listing' });
     }
-});
+};
 exports.updateListing = updateListing;
 // Delete listing
-const deleteListing = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const deleteListing = async (req, res) => {
     try {
         if (!req.user) {
             res.status(401).json({
@@ -176,7 +173,7 @@ const deleteListing = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         const { id } = req.params;
         const sellerId = req.user._id.toString();
-        yield listingService.deleteListing(id, sellerId);
+        await listingService.deleteListing(id, sellerId);
         res.status(200).json({
             success: true,
             message: 'Listing deleted successfully',
@@ -188,12 +185,15 @@ const deleteListing = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             message: error.message,
         });
     }
-});
+};
 exports.deleteListing = deleteListing;
-const getFeaturedListings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+// Get featured listings
+const getFeaturedListings = async (req, res) => {
     try {
-        // Fetch the latest 4 listings as featured listings
-        const listings = yield Listing_1.default.find().sort({ createdAt: -1 }).limit(4).lean();
+        const listings = await Listing_1.default.find({ isScrapItem: false })
+            .sort({ createdAt: -1 })
+            .limit(4)
+            .lean();
         res.status(200).json({
             success: true,
             data: listings,
@@ -205,5 +205,59 @@ const getFeaturedListings = (req, res) => __awaiter(void 0, void 0, void 0, func
             message: error.message,
         });
     }
-});
+};
 exports.getFeaturedListings = getFeaturedListings;
+// Get scrap listings
+const getScrapListings = async (req, res) => {
+    try {
+        const scrapListings = await Listing_1.default.find({ isScrapItem: true }).lean();
+        const sellerIds = scrapListings.map((listing) => listing.sellerId.toString());
+        const sellers = await User_1.default.find({ _id: { $in: sellerIds } }).lean();
+        const listingIds = scrapListings.map((listing) => listing._id);
+        const pickups = await Pickup_1.default.find({ listingId: { $in: listingIds } }).lean();
+        const pickupMap = pickups.reduce((acc, pickup) => {
+            acc[pickup.listingId.toString()] = {
+                facilityName: pickup.facilityName,
+                facilityAddress: pickup.facilityAddress,
+                pickupDate: pickup.pickupDate,
+                status: pickup.status,
+            };
+            return acc;
+        }, {});
+        const scrapData = sellers.map((seller) => {
+            const sellerListings = scrapListings.filter((listing) => listing.sellerId.toString() === seller._id.toString());
+            const listingsWithPickup = sellerListings.map((listing) => ({
+                _id: listing._id,
+                title: listing.title,
+                estimatedWeight: listing.estimatedWeight || 0,
+                pickupDetails: pickupMap[listing._id.toString()] || null,
+            }));
+            return {
+                listingId: sellerListings.length > 0 ? sellerListings[0]._id : null,
+                sellerId: seller._id.toString(),
+                name: `${seller.firstName} ${seller.lastName}`,
+                address: {
+                    city: seller.address.city,
+                    area: seller.address.area,
+                    colony: seller.address.colony,
+                    coordinates: seller.address.coordinates,
+                },
+                items: listingsWithPickup.map((listing) => listing.title),
+                estimatedWeight: `${listingsWithPickup.reduce((sum, listing) => sum + (listing.estimatedWeight || 0), 0)} kg`,
+                listings: listingsWithPickup,
+            };
+        });
+        res.status(200).json({
+            success: true,
+            data: scrapData,
+        });
+    }
+    catch (error) {
+        console.error('Error fetching scrap listings:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+exports.getScrapListings = getScrapListings;

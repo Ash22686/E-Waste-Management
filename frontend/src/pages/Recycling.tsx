@@ -33,6 +33,13 @@ export default function Recycling() {
     }
   }, [city, recyclingCenters]);
 
+  const handleGetDirections = (center) => {
+    const query = `${center.name}, ${center.address}`;
+    const encodedQuery = encodeURIComponent(query);
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+    window.open(mapsUrl, '_blank');
+  };
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -108,14 +115,18 @@ export default function Recycling() {
                             ))}
                           </div>
                         </div>
-                        <Button className="w-full mt-2 bg-green-600 hover:bg-green-700">
+                        <Button
+                          onClick={() => handleGetDirections(center)}
+                          className="w-full mt-2 bg-green-600 hover:bg-green-700"
+                          aria-label={`Get directions to ${center.name}`}
+                        >
                           Get Directions
                         </Button>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-                </TabsContent>
+              </TabsContent>
               
               <TabsContent value="process" className={fadeUp()}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.notFound = exports.errorHandler = void 0;
 // Error handler middleware
 const errorHandler = (err, req, res, next) => {
-    let error = Object.assign({}, err);
+    let error = { ...err };
     error.message = err.message;
     // Log to console for dev
     console.error(err);

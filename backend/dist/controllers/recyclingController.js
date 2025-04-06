@@ -32,22 +32,13 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRecyclingCenterById = exports.getNearbyRecyclingCenters = exports.getAllRecyclingCenters = void 0;
 const recyclingService = __importStar(require("../services/recyclingService"));
 // Get all recycling centers controller
-const getAllRecyclingCenters = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllRecyclingCenters = async (req, res) => {
     try {
-        const recyclingCenters = yield recyclingService.getAllRecyclingCenters();
+        const recyclingCenters = await recyclingService.getAllRecyclingCenters();
         res.status(200).json({
             success: true,
             data: { recyclingCenters },
@@ -59,13 +50,13 @@ const getAllRecyclingCenters = (req, res) => __awaiter(void 0, void 0, void 0, f
             message: error.message,
         });
     }
-});
+};
 exports.getAllRecyclingCenters = getAllRecyclingCenters;
 // Get nearby recycling centers controller
-const getNearbyRecyclingCenters = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getNearbyRecyclingCenters = async (req, res) => {
     try {
         const { lat, lng } = req.query;
-        const recyclingCenters = yield recyclingService.getNearbyRecyclingCenters(Number(lat), Number(lng));
+        const recyclingCenters = await recyclingService.getNearbyRecyclingCenters(Number(lat), Number(lng));
         res.status(200).json({
             success: true,
             data: { recyclingCenters },
@@ -77,13 +68,13 @@ const getNearbyRecyclingCenters = (req, res) => __awaiter(void 0, void 0, void 0
             message: error.message,
         });
     }
-});
+};
 exports.getNearbyRecyclingCenters = getNearbyRecyclingCenters;
 // Get recycling center by ID controller
-const getRecyclingCenterById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getRecyclingCenterById = async (req, res) => {
     try {
         const { id } = req.params;
-        const recyclingCenter = yield recyclingService.getRecyclingCenterById(id);
+        const recyclingCenter = await recyclingService.getRecyclingCenterById(id);
         res.status(200).json({
             success: true,
             data: { recyclingCenter },
@@ -95,5 +86,5 @@ const getRecyclingCenterById = (req, res) => __awaiter(void 0, void 0, void 0, f
             message: error.message,
         });
     }
-});
+};
 exports.getRecyclingCenterById = getRecyclingCenterById;

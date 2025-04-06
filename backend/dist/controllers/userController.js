@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -16,12 +7,12 @@ exports.getSellersWithListings = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Listing_1 = __importDefault(require("../models/Listing"));
 // Fetch sellers with their listings
-const getSellersWithListings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getSellersWithListings = async (req, res) => {
     try {
         // Fetch all sellers from the User collection
-        const sellers = yield User_1.default.find({ userType: "seller" }).lean();
+        const sellers = await User_1.default.find({ userType: "seller" }).lean();
         // Fetch all listings from the Listing collection
-        const listings = yield Listing_1.default.find().lean();
+        const listings = await Listing_1.default.find().lean();
         // Map sellers to include their listings
         const sellersWithListings = sellers.map((seller) => {
             // Filter listings for the current seller
@@ -52,5 +43,5 @@ const getSellersWithListings = (req, res) => __awaiter(void 0, void 0, void 0, f
             message: error.message,
         });
     }
-});
+};
 exports.getSellersWithListings = getSellersWithListings;

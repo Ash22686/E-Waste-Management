@@ -40,9 +40,11 @@ const express_1 = require("express");
 const listingController = __importStar(require("../controllers/listingController"));
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const uploadMiddleware_1 = __importDefault(require("../middleware/uploadMiddleware"));
+const listingController_1 = require("../controllers/listingController");
 const router = (0, express_1.Router)();
 // Public routes
 router.get('/', listingController.getAllListings);
+router.get("/scrap", listingController_1.getScrapListings);
 // ✅ Move `/seller` above `/:id`
 router.get('/seller', authMiddleware_1.protect, (0, authMiddleware_1.restrictTo)('seller'), listingController.getSellerListings);
 router.get('/:id', listingController.getListingById);

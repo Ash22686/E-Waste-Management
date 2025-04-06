@@ -32,59 +32,50 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCurrentUser = exports.login = exports.register = void 0;
 const authService = __importStar(require("../services/authService"));
 // Register controller
-const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const register = async (req, res) => {
     try {
         const userData = req.body;
         console.log('Register request data:', userData);
-        const { user, token } = yield authService.register(userData);
+        const { user, token } = await authService.register(userData);
         res.status(201).json({ user, token }); // Fix: Remove nested "data"
     }
     catch (error) {
         console.error('Error during registration:', error.message);
         res.status(400).json({ success: false, message: error.message });
     }
-});
+};
 exports.register = register;
 // Login controller
-const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const login = async (req, res) => {
     try {
         const credentials = req.body;
         console.log('Login request data:', credentials);
-        const { user, token } = yield authService.login(credentials);
+        const { user, token } = await authService.login(credentials);
         res.status(200).json({ user, token }); // Fix: Remove nested "data"
     }
     catch (error) {
         console.error('Error during login:', error.message);
         res.status(401).json({ success: false, message: error.message });
     }
-});
+};
 exports.login = login;
 // Get current user controller
-const getCurrentUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getCurrentUser = async (req, res) => {
     try {
         if (!req.user) {
             res.status(401).json({ success: false, message: 'Not authenticated' });
             return;
         }
-        const user = yield authService.getCurrentUser(req.user._id.toString());
+        const user = await authService.getCurrentUser(req.user._id.toString());
         res.status(200).json({ user }); // Fix: Remove nested "data"
     }
     catch (error) {
         console.error('Error getting current user:', error.message);
         res.status(404).json({ success: false, message: error.message });
     }
-});
+};
 exports.getCurrentUser = getCurrentUser;

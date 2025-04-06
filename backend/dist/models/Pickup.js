@@ -34,19 +34,14 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const ListingSchema = new mongoose_1.Schema({
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    image: { type: String, required: true },
-    price: { type: Number, required: true },
-    grade: { type: String, required: true },
-    location: { type: String, required: true },
-    category: { type: String, required: true },
-    sellerId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User collection
-    estimatedWeight: { type: Number, required: true }, // Existing field for estimated weight
-    isScrapItem: { type: Boolean, default: false, index: true }, // New field, defaults to false, indexed for faster queries
-    // timeLeft: { type: String }, // Add this if you actually need the timeLeft field in the database
-}, {
-    timestamps: true, // Automatically add createdAt and updatedAt fields
-});
-exports.default = mongoose_1.default.model("Listing", ListingSchema);
+const PickupSchema = new mongoose_1.Schema({
+    listingId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Listing", required: true },
+    sellerId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    area: { type: String, required: true },
+    colony: { type: String, required: true },
+    facilityName: { type: String, required: true },
+    facilityAddress: { type: String, required: true },
+    pickupDate: { type: Date, required: true },
+    status: { type: String, enum: ["scheduled", "completed"], default: "scheduled" },
+}, { timestamps: true });
+exports.default = mongoose_1.default.model("Pickup", PickupSchema);

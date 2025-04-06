@@ -26,5 +26,7 @@ requestController_1.updateRequestStatus);
 router.patch('/:id/cancel', // Example: Use a dedicated path for cancellation
 (0, authMiddleware_1.restrictTo)('buyer'), requestController_1.cancelRequest // Assuming cancelRequest logic is correct for buyers
 );
+router.delete('/:id', (0, authMiddleware_1.restrictTo)('buyer'), requestController_1.deleteRequest // Ensure this is the correct function for deleting requests
+);
 // Consider if sellers should be able to cancel too under certain conditions? If so, add another route or modify logic.
 exports.default = router;
