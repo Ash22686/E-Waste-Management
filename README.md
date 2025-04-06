@@ -67,7 +67,7 @@ CLOUDINARY_API_KEY=your-cloudinary-key
 ```
 #### **Run the Backend Server**
 ```sh
-npm start
+npm run dev 
 ```
 
 ---
@@ -98,42 +98,8 @@ Ensure you configure your `.env` files properly for both **frontend** and **back
 
 ---
 
-## 🐝 API Routes
 
-| Endpoint          | Method | Description                     |
-|------------------|--------|---------------------------------|
-| `/api/auth/login` | POST   | User login                     |
-| `/api/auth/register` | POST | User signup                    |
-| `/api/products`   | GET    | Get all products               |
-| `/api/products/:id` | GET  | Get product details            |
-| `/api/products`   | POST   | Add new product (Seller only)  |
-| `/api/orders`     | POST   | Create an order (Buyer only)   |
 
----
 
-## 🌍 Deployment
 
-### **Backend (Render/Vercel)**
-```sh
-git push origin main
-```
-
-### **Frontend (Vercel/Netlify)**
-```sh
-npm run build
-```
-
----
-
-## 📌 Future Improvements
-- Add real-time chat between buyers and sellers
-- Implement AI-based product recommendations
-- Enhance UI/UX with better animations
-
----
-
-### 🏆 **Contributors**
-- **Your Name** – _Backend & Frontend Developer_
-
-Let me know if you need any changes! 🚀
 
