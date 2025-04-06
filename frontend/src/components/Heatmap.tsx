@@ -50,10 +50,10 @@ const Heatmap = ({
     // Approximate radius in meters (adjust based on real geographic sizes)
     if (regionName.includes("Pune") || regionName.includes("Mumbai")) {
       return 20000; // Larger radius for cities (~20km)
-    } else if (["Shivaji Nagar", "Kothrud", "Hinjewadi", "Andheri", "Bandra", "Goregaon", "Dadar"].includes(regionName)) {
-      return 3000; // Smaller radius for areas (~3km)
+    } else if (["Shivaji Nagar", "Kothrud", "Hinjewadi", "Andheri", "Bandra", "Goregaon", "Dadar", "Bibwewadi"].includes(regionName)) {
+      return 1000; // Smaller radius for areas (~3km)
     } else {
-      return 1000; // Smallest radius for colonies (~1km)
+      return 500; // Smallest radius for colonies (~1km)
     }
   };
 

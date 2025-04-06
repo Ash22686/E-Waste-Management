@@ -44,14 +44,14 @@ export function MarketplaceFilters({
         <h3 className="font-semibold text-lg mb-4">Price Range</h3>
         <div className="px-2">
           <Slider 
-            defaultValue={[0, 1000]} 
-            max={1000} 
+            defaultValue={[0, 10000]} 
+            max={10000} 
             step={10} 
             onValueChange={(value) => setPriceRange(value as [number, number])}
           />
           <div className="flex justify-between mt-2 text-sm text-gray-600">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>₹{priceRange[0]}</span>
+            <span>{priceRange[1]}</span>
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function MarketplaceFilters({
       
       <div className="pt-4 border-t">
         <Button variant="outline" className="w-full" onClick={() => {
-          setPriceRange([0, 1000]);
+          setPriceRange([0, 10000]);
           Object.keys(selectedGrades).forEach((key) => (selectedGrades[key] = false));
           Object.keys(selectedCategories).forEach((key) => toggleCategory(key));
         }}>Reset Filters</Button>

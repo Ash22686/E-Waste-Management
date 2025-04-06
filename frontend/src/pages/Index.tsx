@@ -265,7 +265,7 @@ export default function Index() {
                 Make a Difference With Every Transaction
               </h2>
               <p className={`text-lg text-gray-600 mb-8 ${fadeUp(200)}`}>
-                When you buy or sell through ecoTech, you're contributing to a reduction in electronic waste 
+                When you buy or sell through ReTronics, you're contributing to a reduction in electronic waste 
                 and the conservation of precious materials. Our impact tracker shows you exactly how your 
                 actions are helping the planet.
               </p>
@@ -378,7 +378,7 @@ export default function Index() {
                 <div className="bg-gradient-to-r from-eco-500 to-tech-500 p-2 rounded-lg mr-2">
                   <Recycle className="h-5 w-5 text-white" />
                 </div>
-                <span className="font-bold text-xl text-white tracking-tight">ecoTech</span>
+                <span className="font-bold text-xl text-white tracking-tight">ReTronics</span>
               </div>
               <p className="text-sm mb-4">
                 A sustainable e-waste management platform connecting sellers and buyers.
@@ -447,7 +447,7 @@ export default function Index() {
           </div>
           
           <div className="border-t border-gray-800 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm">© 2023 ecoTech. All rights reserved.</p>
+            <p className="text-sm">© 2023 ReTronics. All rights reserved.</p>
             <div className="mt-4 md:mt-0">
               <a href="#" className="text-sm hover:text-white transition-colors">Privacy Policy</a>
               <span className="mx-3">|</span>

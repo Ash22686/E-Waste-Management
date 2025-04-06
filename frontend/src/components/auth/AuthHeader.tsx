@@ -19,7 +19,7 @@ export function AuthHeader({ mode }: AuthHeaderProps) {
           <div className="bg-gradient-to-r from-eco-500 to-tech-500 p-2 rounded-lg">
             <Recycle className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight">ecoTech</span>
+          <span className="font-bold text-xl tracking-tight">ReTronics</span>
         </div>
         
         <h1 className="text-2xl font-bold tracking-tight mb-1">

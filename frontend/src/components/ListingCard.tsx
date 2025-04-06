@@ -77,7 +77,7 @@ export function ListingCard({
         <CardDescription className="text-sm text-gray-600 mb-2">{description}</CardDescription>
         <div className="flex items-center justify-between mb-4">
           <Badge variant="outline" className="text-xs">{grade}</Badge>
-          <span className="text-lg font-bold">${price}</span>
+          <span className="text-lg font-bold">₹{price}</span>
         </div>
         <div className="flex items-center text-sm text-gray-500">
           <MapPin className="w-4 h-4 mr-1" />

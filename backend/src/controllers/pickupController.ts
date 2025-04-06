@@ -3,13 +3,15 @@ import Pickup from "../models/Pickup";
 import Listing from "../models/Listing";
 import User from "../models/User";
 import axios from "axios";
+import env from "dotenv";
+env.config();
 
 export const schedulePickup = async (req: Request, res: Response): Promise<void> => {
   try {
     const { area, colony, facilityName, facilityAddress, pickupDate } = req.body;
 
     // Fetch scrap listings from the /scrap endpoint
-    const scrapResponse = await axios.get("h${import.meta.env.VITE_API_BASE_URL}/api/listings/scrap");
+    const scrapResponse = await axios.get("https://gdg-main-project.onrender.com/api/listings/scrap");
     const scrapListings = scrapResponse.data.data;
 
     // Filter listings based on area or colony

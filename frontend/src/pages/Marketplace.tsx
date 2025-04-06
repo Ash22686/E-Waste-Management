@@ -16,7 +16,7 @@ export default function Marketplace() {
   // --- USE THE IMPORTED Listing TYPE ---
   const [listings, setListings] = useState<Listing[]>([]);
   const [filteredListings, setFilteredListings] = useState<Listing[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]); // Adjust max range if needed
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]); // Adjust max range if needed
   const [selectedGrades, setSelectedGrades] = useState<Record<string, boolean>>({});
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({});
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
