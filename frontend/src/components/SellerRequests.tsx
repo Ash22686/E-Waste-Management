@@ -1,857 +1,186 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/authService";
-import { createListing, getSellerListings, deleteListing, updateListing } from "@/services/listingService";
-import { Navbar } from "@/components/Navbar";
-import SellerRequests from "@/components/SellerRequests";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect } from 'react';
+// Import the axios-based functions
+import { getSellerRequests, updateRequestStatus, RequestPopulated } from '@/services/requestService'; // Adjust path as needed
+import { useNavigate } from 'react-router-dom'; // Import for potential redirect on auth error
 
-export default function SellerDashboard() {
-  const [user, setUser] = useState(null);
-  const [isAddListingOpen, setIsAddListingOpen] = useState(false);
-  const [isEditListingOpen, setIsEditListingOpen] = useState(false);
-  const [editListing, setEditListing] = useState(null);
-  const [myListings, setMyListings] = useState([]);
-  const [newListing, setNewListing] = useState({
-    title: "",
-    price: "",
-    location: "",
-    category: "",
-    timeLeft: "",
-    estimatedWeight: "",
-    grade: "",
-    image: null,
-    description: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("myListings");
-  const [isDragging, setIsDragging] = useState(false);
-  const [isReviewing, setIsReviewing] = useState(false);
-  const navigate = useNavigate();
+const SellerRequests: React.FC = () => {
+  const [requests, setRequests] = useState<RequestPopulated[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const navigate = useNavigate(); // For redirection
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    setError(null);
+    const token = localStorage.getItem("token"); // Get token
+    if (!token) {
+        setError("Authentication required. Please log in.");
+        setLoading(false);
+        // Optional: redirect to login
+        // navigate('/auth/login');
+        return;
+    }
+
+    try {
+      // Pass the token to the service function
+      const response = await getSellerRequests(token);
+      // The service now returns the full ApiResponse, but we expect it to throw on failure
+      // If it doesn't throw, we assume success based on the try block
+      setRequests(response.data);
+    } catch (err: any) {
+      console.error("Fetch requests error:", err);
+      setError(err.message || 'An error occurred while fetching requests.');
+      setRequests([]); // Clear requests on error
+      // Handle specific auth errors if needed
+      if (err.message.includes('Unauthorized') || err.status === 401 || err.message.includes('401')) {
+           setError("Session expired or invalid. Please log in again.");
+           // Optional: Clear token and redirect
+           // localStorage.removeItem("token");
+           // navigate('/auth/login');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSellerData = async () => {
-      setLoading(true);
-      setError(null);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/auth/login");
+    fetchRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Added navigate to deps if you use it inside useEffect for redirection
+
+  const handleStatusUpdate = async (requestId: string, newStatus: 'accepted' | 'rejected') => {
+    setActionLoadingId(requestId);
+    setError(null);
+    const token = localStorage.getItem("token"); // Get token again
+    if (!token) {
+        setError("Authentication required. Please log in.");
+        setActionLoadingId(null);
         return;
-      }
-
-      try {
-        const userData = await getCurrentUser(token);
-        setUser(userData?.user || null);
-
-        const listingsResponse = await getSellerListings(token);
-        setMyListings(listingsResponse?.data || []);
-      } catch (fetchError) {
-        console.error("Error fetching seller data:", fetchError);
-        setError("Failed to load dashboard data. Please try again.");
-        setMyListings([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSellerData();
-  }, [navigate]);
-
-  const toggleAddListing = () => {
-    setIsAddListingOpen(!isAddListingOpen);
-    if (!isAddListingOpen) {
-      setNewListing({
-        title: "",
-        price: "",
-        location: "",
-        category: "",
-        timeLeft: "",
-        estimatedWeight: "",
-        grade: "",
-        image: null,
-        description: "",
-      });
-      setIsReviewing(false);
-      setError(null);
     }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file && file.size <= 10 * 1024 * 1024) {
-      setNewListing((prev) => ({ ...prev, image: file }));
-      setError(null);
-    } else {
-      setError("Image size exceeds 10MB.");
-    }
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.size <= 10 * 1024 * 1024) {
-      setNewListing((prev) => ({ ...prev, image: file }));
-      setError(null);
-    } else {
-      setError("Image size exceeds 10MB.");
-    }
-  };
-
-  const handleAddListingSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
 
     try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-
-      if (!newListing.image) {
-        throw new Error("Please upload an image");
-      }
-
-      const formData = new FormData();
-      formData.append("image", newListing.image);
-
-      const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/uploads/upload`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const uploadData = await uploadResponse.json();
-      if (!uploadData.success) {
-        throw new Error(uploadData.message || "Image upload failed");
-      }
-
-      setNewListing((prev) => ({
-        ...prev,
-        title: uploadData.item || "Unknown Item",
-        description: uploadData.description || "No description available",
-        grade: uploadData.grade || "Not graded",
-        image: uploadData.url,
-      }));
-
-      setIsReviewing(true);
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      setError(error.message || "Failed to upload image. Please try again.");
+      // Pass token to update function
+      const response = await updateRequestStatus(requestId, newStatus, token);
+      setRequests(prevRequests =>
+          prevRequests.map(req =>
+            req._id === requestId ? { ...req, status: newStatus, updatedAt: response.data.updatedAt } : req
+          )
+      );
+    } catch (updateError: any) {
+      console.error(`Error updating request ${requestId} to ${newStatus}:`, updateError);
+      setError(updateError.message || `Failed to ${newStatus} request: Please try again.`);
+       if (updateError.message.includes('Unauthorized') || updateError.status === 401 || updateError.message.includes('401')) {
+            setError("Session expired or invalid. Please log in again.");
+           
+       }
     } finally {
-      setLoading(false);
+      setActionLoadingId(null);
     }
   };
 
-  const handleConfirmListing = async (e) => {
-    e.preventDefault();
-    setError(null);
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-
-      const listingData = {
-        title: newListing.title,
-        description: newListing.description,
-        grade: newListing.grade,
-        price: newListing.price,
-        location: newListing.location,
-        category: newListing.category,
-        timeLeft: newListing.timeLeft,
-        estimatedWeight: newListing.estimatedWeight,
-        image: newListing.image,
-      };
-
-      const formData = new FormData();
-      Object.entries(listingData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          formData.append(key, value);
-        }
-      });
-
-      await createListing(formData, token);
-
-      const listingsResponse = await getSellerListings(token);
-      setMyListings(listingsResponse?.data || []);
-      setIsAddListingOpen(false);
-      toast.success("Listing added successfully!");
-    } catch (error) {
-      console.error("Error adding listing:", error);
-      setError("Failed to add listing. Please try again.");
-    } finally {
-      setLoading(false);
+    if (loading) {
+        return <p className="text-center text-gray-500 py-4">Loading requests...</p>;
     }
-  };
 
-  const handleDeleteListing = async (id) => {
-    if (window.confirm("Are you sure you want to delete this listing?")) {
-      try {
-        setLoading(true);
-        setError(null);
-        const token = localStorage.getItem("token");
-        await deleteListing(id, token);
-        const listingsResponse = await getSellerListings(token);
-        setMyListings(listingsResponse?.data || []);
-        toast.success("Listing deleted successfully!");
-      } catch (deleteError) {
-        console.error("Error deleting listing:", deleteError);
-        setError("Failed to delete listing. Please try again.");
-      } finally {
-        setLoading(false);
-      }
+    if (error && requests.length === 0) {
+       return (
+          <div className={`p-4 mb-4 rounded ${error.includes("Authentication required") || error.includes("Session expired") ? 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700' : 'bg-red-100 border-l-4 border-red-500 text-red-700'}`} role="alert">
+             <p className="font-bold">{error.includes("Authentication required") || error.includes("Session expired") ? 'Authentication Issue' : 'Error Loading Requests'}</p>
+             <p>{error}</p>
+             {(error.includes("Authentication required") || error.includes("Session expired")) && (
+                 <button onClick={() => navigate('/auth/login')} className="mt-2 px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600">
+                     Go to Login
+                 </button>
+             )}
+          </div>
+       );
     }
-  };
 
-  const handleEditListing = (listing) => {
-    setEditListing(listing);
-    setIsEditListingOpen(true);
-    setError(null);
-  };
-
-  const handleEditImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file && file.size <= 10 * 1024 * 1024) {
-      setEditListing((prev) => ({ ...prev, newImage: file }));
-      setError(null);
-    } else {
-      setError("Image size exceeds 10MB.");
+    if (!loading && requests.length === 0) {
+        return <p className="text-center text-gray-500 py-4">You have no incoming requests.</p>;
     }
-  };
 
-  const handleEditDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.size <= 10 * 1024 * 1024) {
-      setEditListing((prev) => ({ ...prev, newImage: file }));
-      setError(null);
-    } else {
-      setError("Image size exceeds 10MB.");
-    }
-  };
 
-  const handleUpdateListing = async (e) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-
-      let imageUrl = editListing.image;
-
-      if (editListing.newImage) {
-        const formData = new FormData();
-        formData.append("image", editListing.newImage);
-
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/uploads/upload`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        const uploadData = await uploadResponse.json();
-        if (!uploadData.success) {
-          throw new Error(uploadData.message || "Image upload failed");
-        }
-
-        imageUrl = uploadData.url;
-        setEditListing((prev) => ({
-          ...prev,
-          title: uploadData.item || prev.title,
-          description: uploadData.description || prev.description,
-          grade: uploadData.grade || prev.grade,
-          image: uploadData.url,
-        }));
-      }
-
-      const listingData = {
-        ...editListing,
-        image: imageUrl,
-      };
-
-      await updateListing(editListing._id, listingData, token);
-      const listingsResponse = await getSellerListings(token);
-      setMyListings(listingsResponse?.data || []);
-      setIsEditListingOpen(false);
-      toast.success("Listing updated successfully!");
-    } catch (submitError) {
-      console.error("Error updating listing:", submitError);
-      setError(submitError.message || "Failed to update listing. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading && !isAddListingOpen && !isEditListingOpen) {
     return (
-      <div className="min-h-screen py-20 bg-gradient-to-br from-green-50 to-gray-50 flex items-center justify-center">
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-8 w-48 bg-gray-200 rounded mb-4"></div>
-            <div className="h-4 w-32 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+        <div className="space-y-4">
+          
+            {error && requests.length > 0 && (
+                <div className={`p-3 mb-4 rounded text-sm ${error.includes("Authentication required") || error.includes("Session expired") ? 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700' : 'bg-red-100 border-l-4 border-red-500 text-red-700'}`} role="alert">
+                    <p><span className="font-semibold">{error.includes("Authentication required") || error.includes("Session expired") ? 'Authentication Issue:' : 'Action Error:'}</span> {error}</p>
+                    {(error.includes("Authentication required") || error.includes("Session expired")) && (
+                         <button onClick={() => navigate('/auth/login')} className="mt-1 px-2 py-0.5 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600">
+                             Login
+                         </button>
+                     )}
+                </div>
+            )}
 
-  return (
-    <div className="min-h-screen py-20 bg-gradient-to-br from-green-50 to-gray-50">
-      <Navbar />
-      <ToastContainer />
-      <div className="container mx-auto px-4 pb-8">
-        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow">
-          <h1 className="text-3xl font-bold text-gray-800">Seller Dashboard</h1>
-          <button
-            onClick={toggleAddListing}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-200"
-          >
-            Add Listing
-          </button>
-        </div>
+        
+             {requests.map((request) => (
+                <div
+                    key={request._id}
+                    className="border rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
+                    >
+                   
+                    <div className="mb-3 sm:mb-0 flex-grow mr-4">
+                        {/* ... details ... */}
+                         <p className="text-sm font-semibold text-gray-800">
+                           Listing: <span className="font-normal">{request.listing?.title || <span className="text-gray-500 italic">Listing Not Available</span>}</span>
+                         </p>
+                         <p className="text-sm text-gray-600">
+                           Buyer: <span className="font-normal">{request.buyer?.firstName} {request.buyer?.lastName} ({request.buyer?.email || 'N/A'})</span>
+                         </p>
+                         <p className="text-xs text-gray-500 mt-1">
+                           Requested on: {new Date(request.createdAt).toLocaleString()}
+                         </p>
+                         {request.status !== 'pending' && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                 Last Updated: {new Date(request.updatedAt).toLocaleString()}
+                              </p>
+                         )}
+                    </div>
 
-        {error && !isAddListingOpen && !isEditListingOpen && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
+                    {/* Status & Actions */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto flex-shrink-0">
+                         {/* Status Badge */}
+                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full whitespace-nowrap ${
+                             request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                             request.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                             request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                             request.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                             request.status === 'cancelled' ? 'bg-gray-100 text-gray-800' : ''
+                           }`}>
+                           {request.status}
+                         </span>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex">
-              <button
-                className={`mr-8 py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "myListings"
-                    ? "border-green-500 text-green-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-                onClick={() => setActiveTab("myListings")}
-              >
-                My Listings
-              </button>
-              <button
-                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "requests"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-                onClick={() => setActiveTab("requests")}
-              >
-                Requests
-              </button>
-            </nav>
-          </div>
-
-          {activeTab === "myListings" && (
-            <div className="mt-6">
-              {myListings.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">You haven't listed any items yet.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Listing
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Description
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Grade
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Category
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Price
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date Listed
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {myListings.map((listing) => (
-                        <tr key={listing._id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10">
-                                <img
-                                  className="h-10 w-10 rounded-md object-cover"
-                                  src={listing.image || "/api/placeholder/120/90"}
-                                  alt={listing.title}
-                                />
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">{listing.title}</div>
-                              </div>
+                         {/* Action Buttons */}
+                         {request.status === 'pending' && (
+                            <div className="flex space-x-2 mt-2 sm:mt-0">
+                                <button
+                                    onClick={() => handleStatusUpdate(request._id, 'accepted')}
+                                    className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={actionLoadingId === request._id}
+                                >
+                                    {actionLoadingId === request._id ? 'Accepting...' : 'Accept'}
+                                </button>
+                                <button
+                                    onClick={() => handleStatusUpdate(request._id, 'rejected')}
+                                    className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={actionLoadingId === request._id}
+                                >
+                                    {actionLoadingId === request._id ? 'Rejecting...' : 'Reject'}
+                                </button>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {listing.description || "No description available"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {listing.grade || "Not graded"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {listing.category}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₹{listing.price}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(listing.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {listing.isScrapItem ? (
-                              <div>
-                                <p className="text-red-600">Scrap Item</p>
-                                {listing.pickupDetails && (
-                                  <>
-                                    <p>
-                                      <strong>Pickup By:</strong> {listing.pickupDetails.facilityName},{" "}
-                                      {listing.pickupDetails.facilityAddress}
-                                    </p>
-                                    <p>
-                                      <strong>Pickup Date:</strong>{" "}
-                                      {new Date(listing.pickupDetails.pickupDate).toLocaleDateString()}
-                                    </p>
-                                    <p>
-                                      <strong>Status:</strong> {listing.pickupDetails.status}
-                                    </p>
-                                  </>
-                                )}
-                              </div>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => handleEditListing(listing)}
-                                  className="text-blue-600 hover:text-blue-900 mr-4"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteListing(listing._id)}
-                                  className="text-red-600 hover:text-red-900"
-                                >
-                                  Delete
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                         )}
+                    </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "requests" && (
-            <div>
-              <SellerRequests />
-            </div>
-          )}
+             ))}
         </div>
+    );
 
-        {isAddListingOpen && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4 max-h-[80vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Add New Listing</h2>
-                <button onClick={toggleAddListing} className="text-gray-500 hover:text-gray-700">
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+};
 
-              {!isReviewing ? (
-                <form onSubmit={handleAddListingSubmit}>
-                  <div className="space-y-2">
-                    <div>
-                      <label htmlFor="image" className="block text-sm font-medium text-gray-700">
-                        Listing Image (Electronics/E-waste only, Max 10MB)
-                      </label>
-                      <input
-                        type="file"
-                        id="image"
-                        name="image"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        required
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Please upload an image of electronics or e-waste only.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-end space-x-4">
-                    <button
-                      type="button"
-                      onClick={toggleAddListing}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"
-                      disabled={loading}
-                    >
-                      {loading ? "Uploading..." : "Upload Image"}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <form onSubmit={handleConfirmListing}>
-                  <div className="space-y-2">
-                    <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                        Title
-                      </label>
-                      <input
-                        type="text"
-                        id="title"
-                        name="title"
-                        value={newListing.title}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, title: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                        Description
-                      </label>
-                      <textarea
-                        id="description"
-                        name="description"
-                        value={newListing.description}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, description: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        rows={3}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="grade" className="block text-sm font-medium text-gray-700">
-                        Grade
-                      </label>
-                      <input
-                        type="text"
-                        id="grade"
-                        name="grade"
-                        value={newListing.grade}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, grade: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                        Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        id="price"
-                        name="price"
-                        value={newListing.price}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, price: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                        Location
-                      </label>
-                      <input
-                        type="text"
-                        id="location"
-                        name="location"
-                        value={newListing.location}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, location: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                        Category
-                      </label>
-                      <input
-                        type="text"
-                        id="category"
-                        name="category"
-                        value={newListing.category}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, category: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
-                        Estimated Weight (kg)
-                      </label>
-                      <input
-                        type="number"
-                        id="estimatedWeight"
-                        name="estimatedWeight"
-                        value={newListing.estimatedWeight}
-                        onChange={(e) => setNewListing((prev) => ({ ...prev, estimatedWeight: e.target.value }))}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-end space-x-4">
-                    <button
-                      type="button"
-                      onClick={toggleAddListing}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"
-                      disabled={loading}
-                    >
-                      {loading ? "Adding..." : "Add Listing"}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isEditListingOpen && editListing && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-4 max-h-[80vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Edit Listing</h2>
-                <button
-                  onClick={() => {
-                    setIsEditListingOpen(false);
-                    setEditListing(null);
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-              <form onSubmit={handleUpdateListing}>
-                <div className="space-y-2">
-                  <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      name="title"
-                      value={editListing.title}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, title: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={editListing.description}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, description: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      rows={3}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                      Price (₹)
-                    </label>
-                    <input
-                      type="number"
-                      id="price"
-                      name="price"
-                      value={editListing.price}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, price: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="grade" className="block text-sm font-medium text-gray-700">
-                      Grade
-                    </label>
-                    <input
-                      type="text"
-                      id="grade"
-                      name="grade"
-                      value={editListing.grade}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, grade: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      id="location"
-                      name="location"
-                      value={editListing.location}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, location: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                      Category
-                    </label>
-                    <input
-                      type="text"
-                      id="category"
-                      name="category"
-                      value={editListing.category}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, category: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="estimatedWeight" className="block text-sm font-medium text-gray-700">
-                      Estimated Weight (kg)
-                    </label>
-                    <input
-                      type="number"
-                      id="estimatedWeight"
-                      name="estimatedWeight"
-                      value={editListing.estimatedWeight}
-                      onChange={(e) => setEditListing((prev) => ({ ...prev, estimatedWeight: e.target.value }))}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Listing Image (Electronics/E-waste only, Max 10MB)
-                    </label>
-                    {typeof editListing.image === "string" && (
-                      <img src={editListing.image} alt="Current listing" className="mb-2 w-full h-48 object-cover" />
-                    )}
-                    <div
-                      className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${
-                        isDragging ? "border-green-500 bg-green-50" : "border-gray-300"
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDragEnter={handleDragEnter}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleEditDrop}
-                    >
-                      <div className="space-y-1 text-center">
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="edit-file-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
-                          >
-                            <span>Upload new image</span>
-                            <input
-                              id="edit-file-upload"
-                              name="edit-file-upload"
-                              type="file"
-                              className="sr-only"
-                              onChange={handleEditImageChange}
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                        {editListing.newImage && (
-                          <p className="text-xs text-gray-700 mt-1">{editListing.newImage.name}</p>
-                        )}
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Please upload an image of electronics or e-waste only.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end space-x-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditListingOpen(false);
-                      setEditListing(null);
-                    }}
-                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"
-                    disabled={loading}
-                  >
-                    {loading ? "Updating..." : "Update Listing"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+export default SellerRequests;
