@@ -2,8 +2,13 @@ import { Request, Response } from "express";
 import cloudinary from "../uploadCloudinary";
 import fs from "fs";
 import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
 
-const GEMINI_API_KEY = 'AIzaSyDLG3ObQNfMpftULAT43lLkBQtmUnwZnqs';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY is not defined in the environment variables");
+}
 
 const encodeImage = (imagePath: string): string => {
   try {
@@ -14,6 +19,32 @@ const encodeImage = (imagePath: string): string => {
   }
 };
 
+const validateElectronicsImage = async (imagePath: string): Promise<boolean> => {
+  const encodedImage = encodeImage(imagePath);
+  const mimeType = "image/png";
+
+  const validationPrompt = `Determine if this image contains electronics or e-waste. 
+    Respond with only: YES or NO`;
+
+  try {
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [
+          { role: "user", parts: [{ text: validationPrompt }] },
+          { role: "user", parts: [{ inline_data: { mime_type: mimeType, data: encodedImage } }] }
+        ]
+      }
+    );
+
+    const result = response.data.candidates?.[0]?.content.parts?.[0]?.text?.trim();
+    return result === "YES";
+  } catch (error) {
+    console.error("Error validating image:", error);
+    return false;
+  }
+};
+
 const getGeminiGrading = async (imagePath: string) => {
   const encodedImage = encodeImage(imagePath);
   const mimeType = "image/png";
@@ -21,7 +52,7 @@ const getGeminiGrading = async (imagePath: string) => {
   const prompt = `Analyze this image and provide the following details in this exact format:
     **Title:** [Name of the item]
     **Description:** [Brief description of the item in max 15 words]
-    **Grade (A-E):** [A/B/C/D/E based on condition (gust a single letter)]`;
+    **Grade (A-E):** [A/B/C/D/E based on condition (just a single letter)]`;
 
   try {
     const response = await axios.post(
@@ -58,20 +89,28 @@ export const uploadImage = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Get grading from Gemini first
+    const isValidElectronics = await validateElectronicsImage(req.file.path);
+    if (!isValidElectronics) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Error deleting file:", err);
+      });
+      res.status(400).json({ 
+        success: false, 
+        message: "Invalid image: Please upload an image of electronics or e-waste only" 
+      });
+      return;
+    }
+
     const grading = await getGeminiGrading(req.file.path);
 
-    // Upload the file to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: "seller-listings",
     });
 
-    // Delete the file from the local uploads folder
     fs.unlink(req.file.path, (err) => {
       if (err) console.error("Error deleting file:", err);
     });
 
-    // Return the correct response
     res.status(200).json({
       success: true,
       item: grading.itemName,  
@@ -81,9 +120,14 @@ export const uploadImage = async (req: Request, res: Response): Promise<void> =>
     });
   } catch (error: any) {
     console.error("Error in upload process:", error);
+    if (req.file?.path) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Error deleting file:", err);
+      });
+    }
     res.status(500).json({ 
       success: false, 
-      message: "Image processing and upload failed" 
+      message: error.message || "Image processing and upload failed" 
     });
   }
 };

@@ -415,7 +415,7 @@ export default function SellerDashboard() {
                             {listing.category}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${listing.price}
+                          ₹{listing.price}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {new Date(listing.createdAt).toLocaleDateString()}
@@ -567,7 +567,7 @@ export default function SellerDashboard() {
                     </div>
                     <div>
                       <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                        Price ($)
+                        Price (₹)
                       </label>
                       <input
                         type="number"
@@ -696,7 +696,7 @@ export default function SellerDashboard() {
                   </div>
                   <div>
                     <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                      Price ($)
+                      Price (₹)
                     </label>
                     <input
                       type="number"

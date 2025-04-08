@@ -36,106 +36,156 @@ export default function Scrap() {
 
   useEffect(() => {
     if (selectedLevel === "city") {
-      const cityHeatmap = users.reduce((acc, user) => {
+      const cityHeatmap = users.reduce<Record<string, {
+        latSum: number;
+        lngSum: number;
+        count: number;
+        name: string;
+        totalRequests: number;
+        estimatedWeightSum: number;
+        hasScheduledPickup: boolean;
+        type: string;
+      }>>((acc, user) => {
         const city = user.address.city.toLowerCase();
         if (!acc[city]) {
           acc[city] = {
-            lat: user.address.coordinates.lat,
-            lng: user.address.coordinates.lng,
-            weight: 1,
+            latSum: user.address.coordinates.lat,
+            lngSum: user.address.coordinates.lng,
+            count: 1,
             name: city.charAt(0).toUpperCase() + city.slice(1),
-            totalRequests: users.filter(
-              (u) => u.address.city.toLowerCase() === city && u.listings?.length > 0
-            ).length,
-            estimatedWeight: `${users
-              .filter((u) => u.address.city.toLowerCase() === city && u.listings?.length > 0)
-              .reduce((sum, u) => sum + parseFloat(u.estimatedWeight || 0), 0)} kg`,
-            hasScheduledPickup: users.some(
-              (u) => u.address.city.toLowerCase() === city && u.listings?.some((l) => l.pickupDetails)
-            ),
+            totalRequests: 0,
+            estimatedWeightSum: 0,
+            hasScheduledPickup: false,
+            type: "city", // Added type field
           };
         } else {
-          acc[city].weight += 1;
+          acc[city].latSum += user.address.coordinates.lat;
+          acc[city].lngSum += user.address.coordinates.lng;
+          acc[city].count += 1;
+        }
+        if (user.listings?.length > 0) {
+          acc[city].totalRequests += 1; // Add this line to increment totalRequests
+          acc[city].estimatedWeightSum += parseFloat(user.estimatedWeight || 0);
+          if (user.listings.some((l) => l.pickupDetails)) {
+            acc[city].hasScheduledPickup = true;
+          }
         }
         return acc;
       }, {});
-      setHeatmapData(Object.values(cityHeatmap));
+
+      const finalCityHeatmap = Object.values(cityHeatmap).map((city) => ({
+        lat: city.latSum / city.count,
+        lng: city.lngSum / city.count,
+        weight: city.count,
+        name: city.name,
+        totalRequests: city.totalRequests,
+        estimatedWeight: `${city.estimatedWeightSum} kg`,
+        hasScheduledPickup: city.hasScheduledPickup,
+        type: city.type,
+      }));
+      setHeatmapData(finalCityHeatmap);
     } else if (selectedLevel === "area") {
       const areaHeatmap = users
         .filter((user) => user.address.city.toLowerCase() === selectedRegion?.name.toLowerCase())
-        .reduce((acc, user) => {
+        .reduce<Record<string, {
+          latSum: number;
+          lngSum: number;
+          count: number;
+          name: string;
+          totalRequests: number;
+          estimatedWeightSum: number;
+          hasScheduledPickup: boolean;
+          type: string;
+        }>>((acc, user) => {
           const area = user.address.area.toLowerCase();
           if (!acc[area]) {
             acc[area] = {
-              lat: user.address.coordinates.lat,
-              lng: user.address.coordinates.lng,
-              weight: 1,
+              latSum: user.address.coordinates.lat,
+              lngSum: user.address.coordinates.lng,
+              count: 1,
               name: area.charAt(0).toUpperCase() + area.slice(1),
-              totalRequests: users.filter(
-                (u) =>
-                  u.address.area.toLowerCase() === area &&
-                  u.address.city.toLowerCase() === selectedRegion?.name.toLowerCase() &&
-                  u.listings?.length > 0
-              ).length,
-              estimatedWeight: `${users
-                .filter(
-                  (u) =>
-                    u.address.area.toLowerCase() === area &&
-                    u.address.city.toLowerCase() === selectedRegion?.name.toLowerCase() &&
-                    u.listings?.length > 0
-                )
-                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight || 0), 0)} kg`,
-              hasScheduledPickup: users.some(
-                (u) =>
-                  u.address.area.toLowerCase() === area &&
-                  u.address.city.toLowerCase() === selectedRegion?.name.toLowerCase() &&
-                  u.listings?.some((l) => l.pickupDetails)
-              ),
+              totalRequests: 0,
+              estimatedWeightSum: 0,
+              hasScheduledPickup: false,
+              type: "area", // Added type field
             };
           } else {
-            acc[area].weight += 1;
+            acc[area].latSum += user.address.coordinates.lat;
+            acc[area].lngSum += user.address.coordinates.lng;
+            acc[area].count += 1;
+          }
+          if (user.listings?.length > 0) {
+            acc[area].totalRequests += 1;
+            acc[area].estimatedWeightSum += parseFloat(user.estimatedWeight || 0);
+            if (user.listings.some((l) => l.pickupDetails)) {
+              acc[area].hasScheduledPickup = true;
+            }
           }
           return acc;
         }, {});
-      setHeatmapData(Object.values(areaHeatmap));
+
+      const finalAreaHeatmap = Object.values(areaHeatmap).map((area) => ({
+        lat: area.latSum / area.count,
+        lng: area.lngSum / area.count,
+        weight: area.count,
+        name: area.name,
+        totalRequests: area.totalRequests,
+        estimatedWeight: `${area.estimatedWeightSum} kg`,
+        hasScheduledPickup: area.hasScheduledPickup,
+        type: area.type,
+      }));
+      setHeatmapData(finalAreaHeatmap);
     } else if (selectedLevel === "colony") {
       const colonyHeatmap = users
         .filter((user) => user.address.area.toLowerCase() === selectedRegion?.name.toLowerCase())
-        .reduce((acc, user) => {
+        .reduce<Record<string, {
+          latSum: number;
+          lngSum: number;
+          count: number;
+          name: string;
+          totalRequests: number;
+          estimatedWeightSum: number;
+          hasScheduledPickup: boolean;
+          type: string;
+        }>>((acc, user) => {
           const colony = user.address.colony.toLowerCase();
           if (!acc[colony]) {
             acc[colony] = {
-              lat: user.address.coordinates.lat,
-              lng: user.address.coordinates.lng,
-              weight: 1,
+              latSum: user.address.coordinates.lat,
+              lngSum: user.address.coordinates.lng,
+              count: 1,
               name: colony.charAt(0).toUpperCase() + colony.slice(1),
-              totalRequests: users.filter(
-                (u) =>
-                  u.address.colony.toLowerCase() === colony &&
-                  u.address.area.toLowerCase() === selectedRegion?.name.toLowerCase() &&
-                  u.listings?.length > 0
-              ).length,
-              estimatedWeight: `${users
-                .filter(
-                  (u) =>
-                    u.address.colony.toLowerCase() === colony &&
-                    u.address.area.toLowerCase() === selectedRegion?.name.toLowerCase() &&
-                    u.listings?.length > 0
-                )
-                .reduce((sum, u) => sum + parseFloat(u.estimatedWeight || 0), 0)} kg`,
-              hasScheduledPickup: users.some(
-                (u) =>
-                  u.address.colony.toLowerCase() === colony &&
-                  u.address.area.toLowerCase() === selectedRegion?.name.toLowerCase() &&
-                  u.listings?.some((l) => l.pickupDetails)
-              ),
+              totalRequests: 0,
+              estimatedWeightSum: 0,
+              hasScheduledPickup: false,
+              type: "colony", // Added type field
             };
           } else {
-            acc[colony].weight += 1;
+            acc[colony].latSum += user.address.coordinates.lat;
+            acc[colony].lngSum += user.address.coordinates.lng;
+            acc[colony].count += 1;
+          }
+          if (user.listings?.length > 0) {
+            acc[colony].totalRequests += 1;
+            acc[colony].estimatedWeightSum += parseFloat(user.estimatedWeight || 0);
+            if (user.listings.some((l) => l.pickupDetails)) {
+              acc[colony].hasScheduledPickup = true;
+            }
           }
           return acc;
         }, {});
-      setHeatmapData(Object.values(colonyHeatmap));
+
+      const finalColonyHeatmap = Object.values(colonyHeatmap).map((colony) => ({
+        lat: colony.latSum / colony.count,
+        lng: colony.lngSum / colony.count,
+        weight: colony.count,
+        name: colony.name,
+        totalRequests: colony.totalRequests,
+        estimatedWeight: `${colony.estimatedWeightSum} kg`,
+        hasScheduledPickup: colony.hasScheduledPickup,
+        type: colony.type,
+      }));
+      setHeatmapData(finalColonyHeatmap);
     } else if (selectedLevel === "user") {
       setHeatmapData(
         users
@@ -146,7 +196,7 @@ export default function Scrap() {
           )
           .map((user) => ({
             ...user.address.coordinates,
-            type: "user",
+            type: "user", // Already present, kept for consistency
             name: user.name,
           }))
       );
@@ -346,7 +396,7 @@ export default function Scrap() {
                           setIsModalOpen(true);
                         }}
                         className="mt-2"
-                      >
+                        >
                         Schedule Pickup
                       </Button>
                     )}
