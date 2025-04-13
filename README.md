@@ -96,7 +96,7 @@ npm run dev
 
 Ensure you configure your `.env` files properly for both **frontend** and **backend**.
 
----
+
   PORT=5000
   MONGO_URI=
   JWT_SECRET=
@@ -108,7 +108,7 @@ Ensure you configure your `.env` files properly for both **frontend** and **back
   GEMINI_API_KEY = 
   API_BASE_URL =
 
-
+---
 
 
 
