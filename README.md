@@ -60,10 +60,16 @@ npm install
 #### **Set up environment variables**
 Create a `.env` file in the `backend/` directory and add:
 ```sh
-PORT=5000
-MONGO_URI=your-mongodb-connection-string
-JWT_SECRET=your-secret-key
-CLOUDINARY_API_KEY=your-cloudinary-key
+  PORT=5000
+  MONGO_URI=
+  JWT_SECRET=
+  JWT_EXPIRES_IN=
+  NODE_ENV=development
+  CLOUDINARY_CLOUD_NAME = 
+  CLOUDINARY_API_KEY =   
+  CLOUDINARY_API_SECRET = 
+  GEMINI_API_KEY = 
+  API_BASE_URL =
 ```
 #### **Run the Backend Server**
 ```sh
@@ -95,18 +101,6 @@ npm run dev
 ## 🛠️ Environment Variables
 
 Ensure you configure your `.env` files properly for both **frontend** and **backend**.
-
-
-  PORT=5000
-  MONGO_URI=
-  JWT_SECRET=
-  JWT_EXPIRES_IN=
-  NODE_ENV=development
-  CLOUDINARY_CLOUD_NAME = 
-  CLOUDINARY_API_KEY =   
-  CLOUDINARY_API_SECRET = 
-  GEMINI_API_KEY = 
-  API_BASE_URL =
 
 ---
 
