@@ -97,7 +97,16 @@ npm run dev
 Ensure you configure your `.env` files properly for both **frontend** and **backend**.
 
 ---
-
+PORT=5000
+MONGO_URI=
+JWT_SECRET=
+JWT_EXPIRES_IN=
+NODE_ENV=development
+CLOUDINARY_CLOUD_NAME = 
+CLOUDINARY_API_KEY =   
+CLOUDINARY_API_SECRET = 
+GEMINI_API_KEY = 
+API_BASE_URL =
 
 
 
